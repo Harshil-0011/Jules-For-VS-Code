@@ -9,7 +9,7 @@ const execAsync = promisify(exec);
 export interface ToolCallRequest {
   taskId: string;
   toolName: string;
-  args: Record<string, any>;
+  args?: Record<string, any>;
   budget: TaskBudget;
 }
 
@@ -60,7 +60,9 @@ export class ExecutionBroker {
       };
     }
 
-    const policyCheck = this.policyEngine.evaluate(request.toolName, 'execute', request.args);
+    const args = request.args || {};
+
+    const policyCheck = this.policyEngine.evaluate(request.toolName, 'execute', args);
     if (policyCheck.decision === 'DENY') {
       return {
         success: false,
@@ -83,8 +85,7 @@ export class ExecutionBroker {
       this.budgetManager.recordUsage(request.taskId, 1, 1, 0.01);
 
       if (request.toolName === 'shell') {
-        const cmd = request.args.command;
-        // Basic isolation validation
+        const cmd = args.command || '';
         if (cmd.includes('sudo') || cmd.includes('/etc/') || cmd.includes('rm -rf /')) {
           return {
             success: false,
@@ -107,7 +108,7 @@ export class ExecutionBroker {
 
       return {
         success: true,
-        output: `Executed tool ${request.toolName} with args ${JSON.stringify(request.args)}`,
+        output: `Executed tool ${request.toolName} with args ${JSON.stringify(args)}`,
         redacted: false,
       };
     } catch (err: any) {

@@ -50,4 +50,28 @@ export class DAGScheduler {
       return allDepsSatisfied;
     });
   }
+
+  public static propagateFailures(tasks: Task[]): Task[] {
+    const taskMap = new Map<string, Task>(tasks.map((t) => [t.id, t]));
+    let updated = false;
+
+    do {
+      updated = false;
+      for (const task of tasks) {
+        if (task.status === 'CREATED' || task.status === 'PENDING_DEPENDENCIES' || task.status === 'READY') {
+          const hasFailedDep = task.dependencies.some((depId) => {
+            const dep = taskMap.get(depId);
+            return dep && (dep.status === 'FAILED' || dep.status === 'CANCELLED' || dep.status === 'BLOCKED');
+          });
+
+          if (hasFailedDep) {
+            task.status = 'CANCELLED';
+            updated = true;
+          }
+        }
+      }
+    } while (updated);
+
+    return Array.from(taskMap.values());
+  }
 }

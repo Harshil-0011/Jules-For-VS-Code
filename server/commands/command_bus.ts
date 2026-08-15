@@ -1,8 +1,10 @@
 import Database from 'better-sqlite3';
+import { v4 as uuidv4 } from 'uuid';
 
 export interface Command {
   type: string;
   idempotencyKey?: string;
+  tenantId?: string;
   payload: any;
 }
 
@@ -33,6 +35,20 @@ export class CommandBus {
       }
     }
 
-    return await handler(command, this.db);
+    const result = await handler(command, this.db);
+
+    if (command.idempotencyKey) {
+      this.db.prepare(`
+        INSERT INTO audit_logs (id, tenant_id, actor, action, resource, decision, reason, metadata_json)
+        VALUES (?, ?, 'SYSTEM', 'COMMAND_DISPATCH', ?, 'ALLOWED', 'Command executed', ?)
+      `).run(
+        uuidv4(),
+        command.tenantId || 'default-tenant',
+        command.type,
+        JSON.stringify({ idempotencyKey: command.idempotencyKey, payload: command.payload })
+      );
+    }
+
+    return result;
   }
 }

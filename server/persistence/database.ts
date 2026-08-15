@@ -31,6 +31,8 @@ export class DatabaseService {
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
       );
 
+      INSERT OR IGNORE INTO tenants (id, name) VALUES ('default-tenant', 'Default Tenant');
+
       CREATE TABLE IF NOT EXISTS tasks (
         id TEXT PRIMARY KEY,
         tenant_id TEXT NOT NULL,
