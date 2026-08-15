@@ -1,0 +1,29 @@
+{
+  "name": "jules-platform",
+  "version": "1.0.0",
+  "description": "Production-Grade Jules-First Autonomous Software Engineering Platform",
+  "main": "dist/server/index.js",
+  "scripts": {
+    "build": "tsc",
+    "test": "jest --runInBand",
+    "start": "node dist/server/index.js"
+  },
+  "dependencies": {
+    "express": "^4.21.2",
+    "ws": "^8.18.0",
+    "better-sqlite3": "^11.8.0",
+    "zod": "^3.24.2",
+    "uuid": "^11.1.0"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.12",
+    "@types/express": "^5.0.0",
+    "@types/jest": "^29.5.14",
+    "@types/node": "^22.13.4",
+    "@types/uuid": "^10.0.0",
+    "@types/ws": "^8.5.14",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.2.5",
+    "typescript": "^5.7.3"
+  }
+}
