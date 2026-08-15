@@ -36,4 +36,12 @@ export class LeaseManager {
     const notExpired = new Date(lease.expires_at).getTime() >= Date.now();
     return lease.owner_id === ownerId && lease.fencing_token === token && notExpired;
   }
+
+  public reclaimExpiredLeases(): number {
+    const now = new Date().toISOString();
+    const result = this.db.prepare(`
+      DELETE FROM leases WHERE expires_at < ?
+    `).run(now);
+    return result.changes;
+  }
 }

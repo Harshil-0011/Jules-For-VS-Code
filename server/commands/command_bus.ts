@@ -13,7 +13,20 @@ export type CommandHandler = (command: Command, db: Database.Database) => Promis
 export class CommandBus {
   private handlers = new Map<string, CommandHandler>();
 
-  constructor(private db: Database.Database) {}
+  constructor(private db: Database.Database) {
+    this.initDatabase();
+  }
+
+  private initDatabase(): void {
+    this.db.exec(`
+      CREATE TABLE IF NOT EXISTS idempotency_keys (
+        key TEXT PRIMARY KEY,
+        command_type TEXT NOT NULL,
+        result_json TEXT NOT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+  }
 
   public register(type: string, handler: CommandHandler): void {
     this.handlers.set(type, handler);
@@ -26,12 +39,9 @@ export class CommandBus {
     }
 
     if (command.idempotencyKey) {
-      const existing = this.db.prepare(
-        'SELECT * FROM audit_logs WHERE metadata_json LIKE ?'
-      ).get(`%"idempotencyKey":"${command.idempotencyKey}"%`);
-
+      const existing = this.db.prepare('SELECT result_json FROM idempotency_keys WHERE key = ?').get(command.idempotencyKey) as any;
       if (existing) {
-        return { status: 'IDEMPOTENT_SKIPPED', idempotencyKey: command.idempotencyKey };
+        return JSON.parse(existing.result_json);
       }
     }
 
@@ -39,14 +49,9 @@ export class CommandBus {
 
     if (command.idempotencyKey) {
       this.db.prepare(`
-        INSERT INTO audit_logs (id, tenant_id, actor, action, resource, decision, reason, metadata_json)
-        VALUES (?, ?, 'SYSTEM', 'COMMAND_DISPATCH', ?, 'ALLOWED', 'Command executed', ?)
-      `).run(
-        uuidv4(),
-        command.tenantId || 'default-tenant',
-        command.type,
-        JSON.stringify({ idempotencyKey: command.idempotencyKey, payload: command.payload })
-      );
+        INSERT INTO idempotency_keys (key, command_type, result_json)
+        VALUES (?, ?, ?)
+      `).run(command.idempotencyKey, command.type, JSON.stringify(result));
     }
 
     return result;
