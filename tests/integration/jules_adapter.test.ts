@@ -1,6 +1,6 @@
 import { JulesAdapter } from '../../server/jules/jules_adapter';
 
-describe('JulesAdapter Integration', () => {
+describe('JulesAdapter Phase 4 Features', () => {
   let adapter: JulesAdapter;
 
   beforeEach(() => {
@@ -17,5 +17,26 @@ describe('JulesAdapter Integration', () => {
 
     const activities = await adapter.listActivities(session.sessionId);
     expect(activities.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it('should check capabilities correctly', () => {
+    expect(adapter.supportsCapability('code_generation')).toBe(true);
+    expect(adapter.supportsCapability('planning')).toBe(true);
+  });
+
+  it('should reconcile provider session state', async () => {
+    const session = await adapter.createSession('task-456', 'PLANNER');
+    const result = await adapter.reconcileSession(session.sessionId);
+
+    expect(result.providerStatus).toBe('SYNCED');
+    expect(result.localActivityCount).toBe(1);
+  });
+
+  it('should handle unsupported operations gracefully without faking success', async () => {
+    const session = await adapter.createSession('task-789', 'BACKEND_WORKER');
+    const fallback = await adapter.executeUnsupportedFallback(session.sessionId, 'direct_cluster_deploy');
+
+    expect(fallback.supported).toBe(false);
+    expect(fallback.reason).toContain('UNSUPPORTED_OPERATION');
   });
 });

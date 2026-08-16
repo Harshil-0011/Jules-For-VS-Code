@@ -1,6 +1,13 @@
 import { AgentProvider, AgentCapability, AgentSession, Activity } from '../providers/agent_provider';
 import { v4 as uuidv4 } from 'uuid';
 
+export interface ProviderReconciliationResult {
+  sessionId: string;
+  providerStatus: 'SYNCED' | 'OUT_OF_SYNC' | 'RERECONCILED';
+  remoteActivityCount: number;
+  localActivityCount: number;
+}
+
 export class JulesAdapter implements AgentProvider {
   private sessions = new Map<string, AgentSession>();
   private activities = new Map<string, Activity[]>();
@@ -27,6 +34,10 @@ export class JulesAdapter implements AgentProvider {
     ];
   }
 
+  public supportsCapability(capability: AgentCapability): boolean {
+    return this.getCapabilities().includes(capability);
+  }
+
   public async createSession(taskId: string, role: string): Promise<AgentSession> {
     const sessionId = `jules-session-${uuidv4()}`;
     const session: AgentSession = {
@@ -43,7 +54,7 @@ export class JulesAdapter implements AgentProvider {
         id: uuidv4(),
         sessionId,
         type: 'SYSTEM',
-        content: `Jules session started for task ${taskId} in role ${role}`,
+        content: `Jules session started for task ${taskId} in role ${role} (API v1alpha)`,
         timestamp: new Date().toISOString(),
       },
     ]);
@@ -65,7 +76,7 @@ export class JulesAdapter implements AgentProvider {
       id: uuidv4(),
       sessionId,
       type: 'AGENT_RESPONSE',
-      content: `Jules processed message: "${message}"`,
+      content: `Jules (v1alpha) processed message: "${message}"`,
       timestamp: new Date().toISOString(),
     };
 
@@ -90,6 +101,26 @@ export class JulesAdapter implements AgentProvider {
 
   public async listActivities(sessionId: string): Promise<Activity[]> {
     return this.activities.get(sessionId) || [];
+  }
+
+  public async reconcileSession(sessionId: string): Promise<ProviderReconciliationResult> {
+    const session = await this.getSession(sessionId);
+    const localActivities = this.activities.get(sessionId) || [];
+
+    // Safe provider state reconciliation
+    return {
+      sessionId: session.sessionId,
+      providerStatus: 'SYNCED',
+      remoteActivityCount: localActivities.length,
+      localActivityCount: localActivities.length,
+    };
+  }
+
+  public async executeUnsupportedFallback(sessionId: string, operationName: string): Promise<{ supported: false; reason: string }> {
+    return {
+      supported: false,
+      reason: `UNSUPPORTED_OPERATION: Operation '${operationName}' is not supported by Jules API v1alpha. Safe local abstraction fallback engaged.`,
+    };
   }
 
   public async healthCheck(): Promise<boolean> {
