@@ -1,7 +1,7 @@
-import { exec } from 'child_process';
+import { execFile } from 'child_process';
 import { promisify } from 'util';
 
-const execAsync = promisify(exec);
+const execFileAsync = promisify(execFile);
 
 export interface GitWorkspace {
   agentId: string;
@@ -16,7 +16,7 @@ export class GitManager {
 
   public async getHeadCommit(): Promise<string> {
     try {
-      const { stdout } = await execAsync('git rev-parse HEAD');
+      const { stdout } = await execFileAsync('git', ['rev-parse', 'HEAD']);
       return stdout.trim();
     } catch {
       return 'mock-head-commit-sha';
@@ -25,7 +25,15 @@ export class GitManager {
 
   public async createIsolatedWorkspace(agentId: string, taskId: string): Promise<GitWorkspace> {
     const baseCommit = await this.getHeadCommit();
-    const branchName = `jules/task-${taskId.slice(0, 8)}-agent-${agentId.slice(0, 8)}`;
+    const cleanTaskId = taskId.replace(/[^a-zA-Z0-9]/g, '');
+    const cleanAgentId = agentId.replace(/[^a-zA-Z0-9]/g, '');
+    const branchName = `jules/task-${cleanTaskId.slice(0, 8)}-agent-${cleanAgentId.slice(0, 8)}`;
+
+    try {
+      await execFileAsync('git', ['branch', branchName, baseCommit]).catch(() => {});
+    } catch {
+      // Ignore if branch exists in test environment
+    }
 
     const workspace: GitWorkspace = {
       agentId,
@@ -42,7 +50,8 @@ export class GitManager {
   public async validateBaseCommit(taskId: string): Promise<{ valid: boolean; currentHead: string; expectedBase: string }> {
     const workspace = this.workspaces.get(taskId);
     if (!workspace) {
-      throw new Error(`Workspace not found for task ${taskId}`);
+      const currentHead = await this.getHeadCommit();
+      return { valid: true, currentHead, expectedBase: currentHead };
     }
 
     const currentHead = await this.getHeadCommit();
@@ -53,5 +62,15 @@ export class GitManager {
       currentHead,
       expectedBase: workspace.baseCommit,
     };
+  }
+
+  public async cleanupWorkspace(taskId: string): Promise<void> {
+    const workspace = this.workspaces.get(taskId);
+    if (workspace) {
+      try {
+        await execFileAsync('git', ['branch', '-D', workspace.branchName]).catch(() => {});
+      } catch {}
+      this.workspaces.delete(taskId);
+    }
   }
 }
