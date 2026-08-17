@@ -1,6 +1,10 @@
 import { Evidence } from '../tasks/models';
 import { v4 as uuidv4 } from 'uuid';
 import Database from 'better-sqlite3';
+import { execFile } from 'child_process';
+import { promisify } from 'util';
+
+const execFileAsync = promisify(execFile);
 
 export interface VerificationRequest {
   taskId: string;
@@ -16,25 +20,49 @@ export class VerificationEngine {
     const results: Evidence[] = [];
 
     if (request.runBuild) {
-      results.push({
-        id: uuidv4(),
-        taskId: request.taskId,
-        claim: 'Build succeeds cleanly',
-        status: 'VERIFIED',
-        details: { output: 'Build step succeeded with 0 errors' },
-        createdAt: new Date().toISOString(),
-      });
+      try {
+        const { stdout } = await execFileAsync('npm', ['run', 'build'], { timeout: 15000 });
+        results.push({
+          id: uuidv4(),
+          taskId: request.taskId,
+          claim: 'Build succeeds cleanly',
+          status: 'VERIFIED',
+          details: { output: stdout },
+          createdAt: new Date().toISOString(),
+        });
+      } catch (err: any) {
+        results.push({
+          id: uuidv4(),
+          taskId: request.taskId,
+          claim: 'Build succeeds cleanly',
+          status: 'REJECTED',
+          details: { error: err.message },
+          createdAt: new Date().toISOString(),
+        });
+      }
     }
 
     if (request.runTests) {
-      results.push({
-        id: uuidv4(),
-        taskId: request.taskId,
-        claim: 'Unit tests pass',
-        status: 'VERIFIED',
-        details: { passed: 15, failed: 0 },
-        createdAt: new Date().toISOString(),
-      });
+      try {
+        const { stdout } = await execFileAsync('npm', ['test'], { timeout: 15000 });
+        results.push({
+          id: uuidv4(),
+          taskId: request.taskId,
+          claim: 'Unit tests pass',
+          status: 'VERIFIED',
+          details: { output: stdout },
+          createdAt: new Date().toISOString(),
+        });
+      } catch (err: any) {
+        results.push({
+          id: uuidv4(),
+          taskId: request.taskId,
+          claim: 'Unit tests pass',
+          status: 'REJECTED',
+          details: { error: err.message },
+          createdAt: new Date().toISOString(),
+        });
+      }
     }
 
     for (const item of results) {
