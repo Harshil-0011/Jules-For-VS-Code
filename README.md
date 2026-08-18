@@ -2,10 +2,12 @@
 
 > **Jules-first autonomous software engineering ecosystem**
 
-A production-oriented autonomous software engineering ecosystem that puts **Google Jules at the center of a controlled development system** comprising three independent products:
+A production-oriented autonomous software engineering platform putting **Google Jules at the center of a controlled multi-product development system**.
 
-1. **Jules Extension**: Bring Jules into existing development environments (initial target: VS Code).
-2. **Jules Coding IDE**: A standalone AI-native development environment.
+The ecosystem provides three independent products:
+
+1. **Jules Extension**: Bring Jules into your existing VS Code environment.
+2. **Jules Coding IDE**: A standalone AI-native coding environment built around Jules.
 3. **Jules Code CLI**: A terminal-first autonomous coding agent in the category of Claude Code / Codex CLI.
 
 ---
@@ -14,14 +16,15 @@ A production-oriented autonomous software engineering ecosystem that puts **Goog
 
 > **Jules is the primary intelligence. The products are independent clients. The deterministic infrastructure controls execution.**
 
-The platform enforces:
+When design choices conflict, decisions strictly follow this priority hierarchy:
+
 ```text
 CORRECTNESS > SAFETY > VERIFIABILITY > RELIABILITY > RECOVERABILITY > PERFORMANCE > COST > SPEED
 ```
 
 ---
 
-## Ecosystem Architecture
+## Ecosystem Overview
 
 ```text
                          JULES ECOSYSTEM
@@ -52,7 +55,7 @@ CORRECTNESS > SAFETY > VERIFIABILITY > RELIABILITY > RECOVERABILITY > PERFORMANC
                          GOOGLE JULES
 ```
 
-Detailed architectural specifications are located in:
+Detailed architectural documentation:
 - [`FINAL_ARCHITECTURE.md`](./FINAL_ARCHITECTURE.md)
 - [`ARCHITECTURE.md`](./ARCHITECTURE.md)
 
@@ -60,14 +63,19 @@ Detailed architectural specifications are located in:
 
 ## Key Features
 
-- **Three Independent Products**: Extension, Coding IDE, and Code CLI function independently without cross-product dependencies.
-- **Terminal-First Coding Agent**: `jules` CLI supports interactive, task execution, headless, CI, review, and verification modes.
-- **Autonomous Agent Loop**: Interpret → Inspect → Plan → Policy Check → Execute → Observe → Verify → Repair.
-- **Independent Verification**: Claims are independently verified using real builds and tests before merging.
-- **Zero Trust Security**: Sandboxed Execution Broker, default DENY network policy, and secret redaction.
+- **Three Independent Products**: Extension, Coding IDE, and Code CLI run independently without cross-product dependencies.
+- **Terminal Coding Agent**: `jules` CLI supports interactive, task execution, headless, CI, review, and verification modes.
+- **Bounded Agent Loop**: Interpret → Inspect → Plan → Policy Check → Execute → Observe → Verify → Repair.
+- **Independent Claim Verification**: Code claims are independently executed (`npm run build`, `npm test`) before merge.
+- **Zero Trust Security Boundary**: Sandboxed Execution Broker, default DENY network policy, and secret redaction.
 
 ---
 
-## Getting Started
+## Documentation Index
 
-Refer to [`USAGE.md`](./USAGE.md) for details on installing, configuring, running, and interacting with the Jules Ecosystem.
+- [`USAGE.md`](./USAGE.md) — Product usage and command references.
+- [`SECURITY_MODEL.md`](./SECURITY_MODEL.md) — Security policy and sandboxing.
+- [`THREAT_MODEL.md`](./THREAT_MODEL.md) — Threat matrix and mitigations.
+- [`FAILURE_MODES.md`](./FAILURE_MODES.md) — FMEA and recovery strategies.
+- [`IMPLEMENTATION_STATUS.md`](./IMPLEMENTATION_STATUS.md) — Implementation rollout status.
+- [`ARCHITECTURE_AUDIT.md`](./ARCHITECTURE_AUDIT.md) — Architectural inspection and product boundaries.

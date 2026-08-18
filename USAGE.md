@@ -1,6 +1,6 @@
 # Jules Ecosystem - Usage Guide
 
-This guide provides instructions for using the Jules Ecosystem products: **Jules Extension**, **Jules Coding IDE**, and **Jules Code CLI**.
+Guide for using the three independent products in the **Jules Ecosystem**: **Jules Code CLI**, **Jules Extension**, and **Jules Coding IDE**.
 
 ---
 
@@ -8,30 +8,32 @@ This guide provides instructions for using the Jules Ecosystem products: **Jules
 
 The `jules` CLI is a terminal-first autonomous coding agent.
 
-### Usage
+### Commands
+
 ```bash
 # Interactive mode
 jules
 
-# Task execution
+# Task mode
 jules "fix the failing tests"
 
-# Exec command
+# Exec mode
 jules exec "implement authentication"
 
 # Code review
 jules review
 
-# Auto-fix
+# Auto repair
 jules fix
 
-# Headless / CI
+# Headless / CI execution
 jules exec --task "Fix all failing tests" --non-interactive
 ```
 
 ### Permission Modes
-- `READ_ONLY`: No file or workspace mutations allowed.
-- `ASK`: High-risk or mutating tool execution requires user confirmation.
+
+- `READ_ONLY`: File and workspace modifications are forbidden.
+- `ASK`: High-risk or mutating tool operations require user approval.
 - `AUTO`: Permitted operations execute automatically within policy bounds.
 - `CI`: Non-interactive execution for automated build and repair pipelines.
 
@@ -39,24 +41,24 @@ jules exec --task "Fix all failing tests" --non-interactive
 
 ## 2. Jules Extension
 
-Installed into VS Code to bring Jules into an existing IDE workspace.
-Provides Jules sidebar panel, activity feed, diff reviewer, approval prompts, and emergency stop.
+Installed in VS Code to bring Jules into an existing IDE workspace.
+Provides the Jules sidebar panel, activity stream, diff viewer, approval prompts, and emergency stop button.
 
 ---
 
 ## 3. Jules Coding IDE
 
-A standalone AI-native IDE integrating code editor, explorer, terminal, Git workspace, problems view, and Jules agent team workflows.
+A standalone AI-native IDE integrating code editor, file explorer, terminal, Git workspace, problems view, and Jules agent team workflows.
 
 ---
 
-## 4. Environment Configuration
+## 4. Platform Configuration
 
 | Variable | Description | Default |
 |---|---|---|
-| `PORT` | Control plane gateway port | `3000` |
-| `DB_PATH` | Database file path | `./jules_platform.db` |
-| `JULES_API_KEY` | Google Jules API key | `mock-jules-key` |
-| `JULES_API_URL` | Google Jules API URL | `https://jules.googleapis.com/v1alpha` |
-| `GITHUB_TOKEN` | GitHub API access token | `mock-github-token` |
+| `PORT` | Gateway API port | `3000` |
+| `DB_PATH` | SQLite database file path | `./jules_platform.db` |
+| `JULES_API_KEY` | Google Jules API Key | `mock-jules-key` |
+| `JULES_API_URL` | Google Jules Endpoint | `https://jules.googleapis.com/v1alpha` |
+| `GITHUB_TOKEN` | GitHub Token | `mock-github-token` |
 | `EMERGENCY_STOP` | Global emergency stop flag | `false` |

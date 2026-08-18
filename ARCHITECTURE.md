@@ -1,19 +1,26 @@
-# System Architecture & Design Specification
+# System Architecture Specification
 
-## 1. Executive Summary
-This project defines the architecture for the **Jules Ecosystem**, comprising three independent products sharing a lightweight protocol and library layer:
-1. **Jules Extension**: Integration with existing IDEs (VS Code).
-2. **Jules Coding IDE**: Standalone AI-native development environment.
-3. **Jules Code CLI**: Terminal-first autonomous coding agent.
+## Jules Ecosystem (Version 4.0 Canonical Architecture)
 
-## 2. Core Priority Hierarchy
-When design choices, performance optimizations, or operational tradeoffs conflict, system decisions MUST strictly follow this priority hierarchy:
+### 1. Overview
+The **Jules Ecosystem** consists of three independent products sharing a lightweight common foundation (protocols, SDKs, core tooling):
+
+1. **Jules Extension**: VS Code integration bringing Jules into existing IDE environments.
+2. **Jules Coding IDE**: A standalone AI-native development environment.
+3. **Jules Code CLI**: A terminal-first autonomous coding agent.
+
+---
+
+### 2. Core Priority Hierarchy
+System choices and tradeoffs strictly follow this priority hierarchy:
 
 ```text
 CORRECTNESS > SAFETY > VERIFIABILITY > RELIABILITY > RECOVERABILITY > PERFORMANCE > COST > SPEED
 ```
 
-## 3. Product Ecosystem Architecture
+---
+
+### 3. Product Relationship Diagram
 
 ```text
                          JULES ECOSYSTEM
@@ -44,7 +51,9 @@ CORRECTNESS > SAFETY > VERIFIABILITY > RELIABILITY > RECOVERABILITY > PERFORMANC
                          GOOGLE JULES
 ```
 
-## 4. Product Independence Rule
+---
+
+### 4. Product Independence Rule
 The three products must be:
 - independently installable
 - independently runnable
@@ -54,8 +63,12 @@ The three products must be:
 
 No product depends on another product for normal operation. The "Agent OS" concept is permanently removed.
 
-## 5. Core Platform Principle
-Jules is the primary intelligence. The products are independent clients. The deterministic infrastructure controls execution, sandboxing, verification, and policy enforcement.
+---
 
-## 6. Detailed System Specification
-For full architecture specifications, refer to [`FINAL_ARCHITECTURE.md`](./FINAL_ARCHITECTURE.md).
+### 5. Core Platform Principle
+> **Jules is the primary intelligence. The products are independent clients. The deterministic infrastructure controls execution.**
+
+The LLM decides *what to solve* and *how to write code*.
+The platform decides *permissions*, *sandboxing*, *verification*, *budgets*, and *merge policies*.
+
+For the complete 66-section specification, refer to [`FINAL_ARCHITECTURE.md`](./FINAL_ARCHITECTURE.md).
