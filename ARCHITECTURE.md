@@ -1,4 +1,4 @@
-# Final System Architecture & Design Specification
+# System Architecture & Design Specification
 
 ## 1. Core Priority Hierarchy
 When design choices, performance optimizations, or operational tradeoffs conflict, system decisions MUST strictly follow this priority hierarchy:
@@ -18,25 +18,16 @@ CORRECTNESS > SAFETY > VERIFIABILITY > RELIABILITY > RECOVERABILITY > PERFORMANC
 
 ---
 
-## 2. System Goals & Interaction Surfaces
+## 2. Primary User Interaction Surfaces
+The Google Jules platform provides three primary user interaction surfaces:
 
-### Goals
-- **Google Jules First**: Google Jules is the primary default autonomous coding agent.
-- **Provider Extensibility**: Heterogeneous AI agents (Gemini, Claude, Codex, Local Models, Custom HTTP agents) can be registered via `AgentProvider` adapters.
-- **Multi-Agent Teams**: Support teams of concurrent Jules and non-Jules agents assigned to distinct DAG tasks.
-- **Deterministic Orchestration**: LLMs decide solutions; the deterministic control plane decides permission, task DAG status, verification success, and merge policy.
-- **Durable Orchestration**: Task state, workflow state, leases, outbox events, and evidence survive server/worker crashes.
-- **Git Safety**: Agents operate in isolated Git branches/workspaces; stale base commits are strictly rejected.
-- **Independent Verification**: Agent claims ("tests pass") are independently executed and verified before merge.
-
-### User Interaction Surfaces
-1. **VS Code Extension**: Native Visual Studio Code interface integrating sidebar task management, agent team orchestration panel, live activity streams, approval notifications, and emergency stop button.
-2. **Coding IDE Interface**: Embedded and web-based IDE control interface for visualizing workflow DAGs, reviewing code changes, and monitoring team execution.
-3. **Coding CLI / Agent OS Shell**: Command-line interface and terminal tool enabling local developers and automation scripts to submit tasks, inspect execution evidence, and trigger platform policies.
+1. **VS Code Extension**: Native visual interface integrating directly with VS Code sidebar, task lists, agent team panel, evidence logs, approval notifications, and emergency stop control.
+2. **Coding IDE Interface**: Web-based/embedded IDE dashboard for managing workflows, visualizing task DAGs, reviewing code changes, and monitoring multi-agent executions.
+3. **Coding CLI / Agent OS Shell**: Command-line interface and terminal shell tool enabling developers and CI/CD pipelines to trigger tasks, monitor agent activities, inspect evidence graphs, and administer control plane policies.
 
 ---
 
-## 3. System Architecture Overview
+## 3. High-Level Architecture Overview
 
 ```text
  ┌─────────────────────────┐  ┌─────────────────────────┐  ┌─────────────────────────┐
@@ -83,6 +74,7 @@ COMMAND BUS                            CONTROL PLANE                       EVENT
 ---
 
 ## 4. Bounded Contexts
+
 1. **Auth & Tenancy**: Workspace & user identity verification, RBAC, JWT validation, and multi-tenant isolation.
 2. **Task & Workflow Engine**: Durable Task DAGs, Attempts, Executions, Workflow State Machines, Idempotent Commands, Transactional Outbox/Inbox.
 3. **Agent Management & Multi-Agent Teams**: `AgentRegistry`, Capability matching, `JulesAdapter`, heterogeneous Provider Adapters, Team Orchestrator.
@@ -95,10 +87,13 @@ COMMAND BUS                            CONTROL PLANE                       EVENT
 ---
 
 ## 5. Authoritative State Ownership
+
+To prevent LLMs or ephemeral processes from acting as sources of state truth:
+
 - **Control Plane DB (PostgreSQL / SQLite)**: Authoritative for Tasks, Task Dependencies, Attempts, Executions, Teams, Policies, Budgets, Approvals, Workflow States, Outbox/Inbox, and Lease Fencing Tokens.
 - **Jules / Provider API**: Authoritative for Provider Session State & Activity logs.
 - **Git Repository**: Authoritative for Source Commit History, Trees, Workspaces, and Patch Diffs.
-- **GitHub**: Authoritative for Remote Repositories, Pull Requests, and Remote Review State.
+- **GitHub**: Authoritative for Remote Repositories, Pull Requests, and Remote Code Review State.
 - **Verification Engine**: Authoritative for Verification Executions, Pass/Fail Evidence, and Security Reports.
 
 ---
@@ -116,9 +111,9 @@ COMMAND BUS                            CONTROL PLANE                       EVENT
 
 ---
 
-## 7. Security & System Invariants
-1. **Trust Hierarchy**: System Policy > User Intent > Orchestrator Policy > Agent Role > Repository Content. Repository content CANNOT override platform security policies.
+## 7. Security Invariants
+1. **Trust Hierarchy**: System Policy > User Intent > Orchestrator Policy > Agent Role > Repository Content. Repository files can NEVER override platform policies.
 2. **No Stale Worker Writes**: Monotonically increasing fencing tokens on leases reject expired worker updates.
-3. **Independent Verification**: Every agent claim ("tests pass") requires independent re-execution and evidence before merge.
-4. **Zero Trust Tool Execution**: Tool executions pass through the Execution Broker with secret redaction and resource limits.
+3. **Independent Verification**: Agent claims ("tests pass") are independently executed and verified before merge.
+4. **Zero Trust Tool Execution**: Tool execution passes through the Execution Broker with secret redaction and resource limits.
 5. **Emergency Stop**: Instantly halts all active tasks, tool executions, and merges across all workers.

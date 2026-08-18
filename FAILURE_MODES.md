@@ -1,5 +1,10 @@
 # Failure Modes and Effects Analysis (FMEA)
 
+Failure recovery mechanisms strictly observe the system priority hierarchy:
+```text
+CORRECTNESS > SAFETY > VERIFIABILITY > RELIABILITY > RECOVERABILITY > PERFORMANCE > COST > SPEED
+```
+
 | Failure Cause | Effect | Detection | Mitigation | Recovery | Severity | Likelihood | Residual Risk |
 |---|---|---|---|---|---|---|---|
 | Jules API Outage / 500 | Jules agent calls fail | Circuit breaker opens; HTTP 5xx tracking | Exponential backoff, jitter, fallback to queue or alternate provider | Re-query status, resume session when online | High | Medium | Bounded |

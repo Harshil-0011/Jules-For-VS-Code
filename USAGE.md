@@ -4,9 +4,15 @@ This guide provides instructions for installing, configuring, running, and inter
 
 ---
 
-## 1. System Overview
+## 1. System Overview & Core Priority Hierarchy
 
-The platform connects **VS Code**, **Google Jules**, **GitHub**, and sandboxed tools through a durable, policy-controlled orchestration control plane.
+The platform connects **VS Code**, **Coding IDE Interface**, **Coding CLI / Agent OS Shell**, **Google Jules**, **GitHub**, and sandboxed tools through a durable, policy-controlled orchestration control plane.
+
+When design choices, performance optimizations, or operational tradeoffs conflict, system decisions MUST strictly follow this priority hierarchy:
+
+```text
+CORRECTNESS > SAFETY > VERIFIABILITY > RELIABILITY > RECOVERABILITY > PERFORMANCE > COST > SPEED
+```
 
 Key features:
 - **Google Jules First**: Jules acts as the primary autonomous coding agent.
@@ -123,25 +129,14 @@ npm test
 
 ---
 
-## 8. Real-time WebSocket Stream
+## 8. User Interaction Surfaces
 
-Connect to `ws://localhost:3000/events` to stream live system events (task state transitions, agent activities, verification results).
+1. **VS Code Extension**: Access commands (`jules.newTask`, `jules.startTask`, `jules.emergencyStop`, etc.) from the command palette or sidebar.
+2. **Coding IDE Interface**: Visual web-based IDE panel for reviewing DAG execution graph and approving high-risk changes.
+3. **Coding CLI / Agent OS Shell**: CLI command interface to submit tasks and inspect verification evidence.
 
 ---
 
-## 9. VS Code Extension Commands
+## 9. Real-time WebSocket Stream
 
-The native extension in `vscode/extension/extension.ts` provides the following commands:
-
-- `Jules: New Task` (`jules.newTask`)
-- `Jules: Start Task` (`jules.startTask`)
-- `Jules: Add Agent` (`jules.addAgent`)
-- `Jules: Create Team` (`jules.createTeam`)
-- `Jules: Approve Plan` (`jules.approvePlan`)
-- `Jules: Pause Task` (`jules.pauseTask`)
-- `Jules: Take Over` (`jules.takeOver`)
-- `Jules: Verify` (`jules.verify`)
-- `Jules: Review Changes` (`jules.reviewChanges`)
-- `Jules: Create PR` (`jules.createPR`)
-- `Jules: Cancel` (`jules.cancel`)
-- `Jules: Emergency Stop` (`jules.emergencyStop`)
+Connect to `ws://localhost:3000/events` to stream live system events (task state transitions, agent activities, verification results).

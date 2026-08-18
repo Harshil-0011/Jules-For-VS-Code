@@ -1,5 +1,10 @@
 # Threat Model
 
+System security and threat mitigations are prioritized according to:
+```text
+CORRECTNESS > SAFETY > VERIFIABILITY > RELIABILITY > RECOVERABILITY > PERFORMANCE > COST > SPEED
+```
+
 | Threat ID | Threat | Attack Surface | Mitigation | Detection | Recovery | Residual Risk |
 |---|---|---|---|---|---|---|
 | T-01 | Prompt Injection | Repo README/issues containing malicious agent instructions | Strict Trust Hierarchy; prompt isolation; static boundary tags | Pattern anomaly monitoring in tool calls | Cancel task, reset workspace | Low |

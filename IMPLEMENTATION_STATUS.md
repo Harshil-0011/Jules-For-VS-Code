@@ -1,12 +1,27 @@
 # Implementation Status
 
-## 1. Verified & Completed Components
+## 1. Core System Philosophy & Priorities
+All implemented systems align with the core priority hierarchy:
+```text
+CORRECTNESS > SAFETY > VERIFIABILITY > RELIABILITY > RECOVERABILITY > PERFORMANCE > COST > SPEED
+```
+
+Supported User Interfaces:
+1. VS Code Extension
+2. Coding IDE Interface
+3. Coding CLI / Agent OS Shell
+
+---
+
+## 2. Verified & Completed Components
 - **Architectural Documentation**:
-  - `ARCHITECTURE_AUDIT.md`: Baseline inspection and migration plan.
+  - `ARCHITECTURE.md`: Complete architecture overview and core priority hierarchy.
   - `FINAL_ARCHITECTURE.md`: Canonical system architecture and system invariants.
+  - `ARCHITECTURE_AUDIT.md`: Baseline inspection and migration plan.
   - `SECURITY_MODEL.md`: Zero trust hierarchy, secret redaction, and emergency stop.
   - `THREAT_MODEL.md`: Threat matrix with mitigations and detection.
   - `FAILURE_MODES.md`: Failure Mode & Effects Analysis (FMEA).
+  - `USAGE.md`: Operations and API user guide.
 - **Core Orchestration Monolith**:
   - `server/api/config.ts`: Environment and configuration validation.
   - `server/observability/logger.ts`: Structured JSON logger with correlation context.
@@ -38,7 +53,9 @@
   - `server/events/websocket_server.ts`: Real-time WebSocket event streaming server (`/events`).
   - `vscode/extension/extension.ts`: Native VS Code extension entry point registering platform commands (`jules.newTask`, `jules.startTask`, `jules.emergencyStop`, etc.).
 
-## 2. Invariants Enforced and Verified
+---
+
+## 3. Invariants Enforced and Verified
 - No unauthorized tool executions or policy bypasses.
 - Stale workers are fenced out via monotonically increasing fencing tokens.
 - Tasks execute strictly in topological order after dependency satisfaction.
@@ -46,5 +63,7 @@
 - Stale base commits block merge attempts.
 - Emergency stop instantly halts execution broker operations across all workers.
 
-## 3. Verified Test Suite
+---
+
+## 4. Verified Test Suite
 - All 21 tests across 8 test suites pass cleanly with zero errors (`npm test`).
