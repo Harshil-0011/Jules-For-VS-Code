@@ -1,3 +1,6 @@
+import * as fs from 'fs';
+import * as path from 'path';
+
 export interface WorkspaceInfo {
   rootPath: string;
   projectName: string;
@@ -24,12 +27,29 @@ export class WorkspaceAdapter {
   constructor(private rootPath: string = process.cwd()) {}
 
   public discoverWorkspace(): WorkspaceInfo {
+    const gitDir = path.join(this.rootPath, '.git');
+    const hasGit = fs.existsSync(gitDir);
     return {
       rootPath: this.rootPath,
-      projectName: this.rootPath.split('/').pop() || 'unknown',
-      hasGitRepo: true,
-      packageManager: 'npm',
+      projectName: path.basename(this.rootPath) || 'unknown',
+      hasGitRepo: hasGit,
+      packageManager: fs.existsSync(path.join(this.rootPath, 'package-lock.json')) ? 'npm' : 'unknown',
     };
+  }
+
+  public ensureJulesDir(): string {
+    const julesDir = path.join(this.rootPath, '.jules');
+    if (!fs.existsSync(julesDir)) {
+      fs.mkdirSync(julesDir, { recursive: true });
+    }
+    return julesDir;
+  }
+
+  public createTaskFile(taskId: string, data: any): string {
+    const julesDir = this.ensureJulesDir();
+    const taskFilePath = path.join(julesDir, `${taskId}.json`);
+    fs.writeFileSync(taskFilePath, JSON.stringify(data, null, 2), 'utf-8');
+    return taskFilePath;
   }
 }
 
@@ -37,8 +57,19 @@ export class GitAdapter {
   constructor(private rootPath: string = process.cwd()) {}
 
   public getGitState(): GitAdapterState {
+    const headFile = path.join(this.rootPath, '.git', 'HEAD');
+    let branch = 'main';
+    if (fs.existsSync(headFile)) {
+      try {
+        const content = fs.readFileSync(headFile, 'utf-8').trim();
+        if (content.startsWith('ref: refs/heads/')) {
+          branch = content.replace('ref: refs/heads/', '');
+        }
+      } catch (_) {}
+    }
+
     return {
-      branch: 'main',
+      branch,
       headCommit: '0000000000000000000000000000000000000000',
       isClean: true,
       stagedFiles: [],
@@ -95,10 +126,27 @@ export function activate(context?: any) {
 
   const registeredCommands: { [key: string]: Function } = {
     'jules.newTask': (payload?: any) => {
-      state.activeTaskId = payload?.taskId || 'task-default-id';
-      return { status: 'TASK_CREATED', taskId: state.activeTaskId };
+      const taskId = payload?.taskId || `task-${Date.now()}`;
+      state.activeTaskId = taskId;
+      const taskData = {
+        taskId,
+        title: payload?.title || 'New Jules Autonomous Task',
+        status: 'CREATED',
+        createdAt: new Date().toISOString(),
+      };
+      const filePath = workspaceAdapter.createTaskFile(taskId, taskData);
+      return { status: 'TASK_CREATED', taskId, filePath };
     },
-    'jules.startTask': () => ({ status: 'TASK_STARTED', taskId: state.activeTaskId }),
+    'jules.startTask': () => {
+      if (state.activeTaskId) {
+        workspaceAdapter.createTaskFile(state.activeTaskId, {
+          taskId: state.activeTaskId,
+          status: 'RUNNING',
+          startedAt: new Date().toISOString(),
+        });
+      }
+      return { status: 'TASK_STARTED', taskId: state.activeTaskId };
+    },
     'jules.addAgent': (agentName: string) => ({ status: 'AGENT_ADDED', agent: agentName || 'default-agent' }),
     'jules.createTeam': (teamName: string) => ({ status: 'TEAM_CREATED', team: teamName || 'default-team' }),
     'jules.approvePlan': () => ({ status: 'PLAN_APPROVED' }),

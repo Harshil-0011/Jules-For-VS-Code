@@ -1,0 +1,74 @@
+{
+  "name": "jules-extension",
+  "displayName": "Jules Autonomous Engineering Agent",
+  "description": "Google Jules autonomous software engineering platform extension for VS Code",
+  "version": "4.0.0",
+  "publisher": "jules-platform",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "AI",
+    "Programming Languages",
+    "Other"
+  ],
+  "main": "../dist/vscode/extension/extension.js",
+  "activationEvents": [
+    "onStartupFinished",
+    "onCommand:jules.newTask",
+    "onCommand:jules.startTask",
+    "onCommand:jules.emergencyStop"
+  ],
+  "contributes": {
+    "commands": [
+      {
+        "command": "jules.newTask",
+        "title": "Jules: New Task"
+      },
+      {
+        "command": "jules.startTask",
+        "title": "Jules: Start Task"
+      },
+      {
+        "command": "jules.addAgent",
+        "title": "Jules: Add Agent"
+      },
+      {
+        "command": "jules.createTeam",
+        "title": "Jules: Create Team"
+      },
+      {
+        "command": "jules.approvePlan",
+        "title": "Jules: Approve Plan"
+      },
+      {
+        "command": "jules.pauseTask",
+        "title": "Jules: Pause Task"
+      },
+      {
+        "command": "jules.takeOver",
+        "title": "Jules: Take Over"
+      },
+      {
+        "command": "jules.verify",
+        "title": "Jules: Verify"
+      },
+      {
+        "command": "jules.reviewChanges",
+        "title": "Jules: Review Changes"
+      },
+      {
+        "command": "jules.createPR",
+        "title": "Jules: Create PR"
+      },
+      {
+        "command": "jules.cancel",
+        "title": "Jules: Cancel Task"
+      },
+      {
+        "command": "jules.emergencyStop",
+        "title": "Jules: Emergency Stop"
+      }
+    ]
+  }
+}
