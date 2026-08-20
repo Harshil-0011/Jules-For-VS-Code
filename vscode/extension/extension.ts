@@ -220,6 +220,51 @@ export function activate(context?: any) {
         historyCount: state.chatHistory.length,
       };
     },
+    'jules.assignGitHubIssue': async (payload: { issueNumber: number; issueTitle: string }) => {
+      if (!state.julesSession) {
+        const taskId = `task-github-${payload.issueNumber}`;
+        state.activeTaskId = taskId;
+        state.julesSession = await julesAdapter.createSession(taskId, 'lead-autonomous-agent');
+        state.activeSessionId = state.julesSession.sessionId;
+      }
+      const activity = await julesAdapter.assignGitHubIssue(
+        state.activeSessionId!,
+        payload.issueNumber,
+        payload.issueTitle
+      );
+      return { status: 'GITHUB_ISSUE_ASSIGNED', activity };
+    },
+    'jules.versionBump': async (payload: { packageName: string; targetVersion: string }) => {
+      if (!state.julesSession) {
+        const taskId = `task-vbump-${Date.now()}`;
+        state.activeTaskId = taskId;
+        state.julesSession = await julesAdapter.createSession(taskId, 'lead-autonomous-agent');
+        state.activeSessionId = state.julesSession.sessionId;
+      }
+      const activity = await julesAdapter.versionBump(
+        state.activeSessionId!,
+        payload.packageName,
+        payload.targetVersion
+      );
+      return { status: 'VERSION_BUMP_COMPLETE', activity };
+    },
+    'jules.bugFix': async (payload: { bugDescription: string }) => {
+      if (!state.julesSession) {
+        const taskId = `task-bugfix-${Date.now()}`;
+        state.activeTaskId = taskId;
+        state.julesSession = await julesAdapter.createSession(taskId, 'lead-autonomous-agent');
+        state.activeSessionId = state.julesSession.sessionId;
+      }
+      const activity = await julesAdapter.bugFix(state.activeSessionId!, payload.bugDescription);
+      return { status: 'BUG_FIX_DISPATCHED', activity };
+    },
+    'jules.cloudVmStatus': async () => {
+      if (!state.julesSession) {
+        return { vmStatus: 'NOT_PROVISIONED' };
+      }
+      const session = await julesAdapter.getSession(state.activeSessionId!);
+      return { vmStatus: session.vmStatus, sessionId: session.sessionId };
+    },
     'jules.chat': () => ({
       chatHistory: state.chatHistory,
       activeTaskId: state.activeTaskId,

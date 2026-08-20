@@ -84,6 +84,22 @@
       {
         "command": "jules.reconcileSession",
         "title": "Jules: Reconcile Session"
+      },
+      {
+        "command": "jules.assignGitHubIssue",
+        "title": "Jules: Assign GitHub Issue"
+      },
+      {
+        "command": "jules.versionBump",
+        "title": "Jules: Version Bump Dependency"
+      },
+      {
+        "command": "jules.bugFix",
+        "title": "Jules: Fix Bug"
+      },
+      {
+        "command": "jules.cloudVmStatus",
+        "title": "Jules: Cloud VM Status"
       }
     ]
   }

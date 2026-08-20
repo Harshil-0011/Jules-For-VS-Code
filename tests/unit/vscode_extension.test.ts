@@ -24,13 +24,16 @@ describe('VS Code Extension - Canonical Architecture Phase 5', () => {
     expect(ext.status).toBe('ACTIVE');
     expect(ext.registeredCommands).toContain('jules.newTask');
     expect(ext.registeredCommands).toContain('jules.getCapabilities');
-    expect(ext.registeredCommands).toContain('jules.getSession');
-    expect(ext.registeredCommands).toContain('jules.listActivities');
-    expect(ext.registeredCommands).toContain('jules.reconcileSession');
+    expect(ext.registeredCommands).toContain('jules.assignGitHubIssue');
+    expect(ext.registeredCommands).toContain('jules.versionBump');
+    expect(ext.registeredCommands).toContain('jules.bugFix');
+    expect(ext.registeredCommands).toContain('jules.cloudVmStatus');
 
     const capRes = await ext.executeCommand('jules.getCapabilities');
     expect(capRes.provider).toBe('google-jules');
-    expect(capRes.capabilities).toContain('code_generation');
+    expect(capRes.capabilities).toContain('cloud_vm_sandbox');
+    expect(capRes.capabilities).toContain('github_issue_assignment');
+    expect(capRes.capabilities).toContain('version_bump');
   });
 
   it('should support WorkspaceAdapter discovery and file creation on host PC', () => {
@@ -44,6 +47,24 @@ describe('VS Code Extension - Canonical Architecture Phase 5', () => {
 
     const content = JSON.parse(fs.readFileSync(createdFilePath, 'utf-8'));
     expect(content.title).toBe('Test Task');
+  });
+
+  it('should execute assignGitHubIssue, versionBump, bugFix, and cloudVmStatus commands', async () => {
+    const ext = activate();
+
+    const ghRes = await ext.executeCommand('jules.assignGitHubIssue', { issueNumber: 42, issueTitle: 'Fix memory leak' });
+    expect(ghRes.status).toBe('GITHUB_ISSUE_ASSIGNED');
+    expect(ghRes.activity.content).toContain('Issue #42');
+
+    const vbRes = await ext.executeCommand('jules.versionBump', { packageName: 'next', targetVersion: '15.4.5' });
+    expect(vbRes.status).toBe('VERSION_BUMP_COMPLETE');
+    expect(vbRes.activity.content).toContain('next');
+
+    const bfRes = await ext.executeCommand('jules.bugFix', { bugDescription: 'Null pointer in auth handler' });
+    expect(bfRes.status).toBe('BUG_FIX_DISPATCHED');
+
+    const vmRes = await ext.executeCommand('jules.cloudVmStatus');
+    expect(vmRes.vmStatus).toBe('PROVISIONED');
   });
 
   it('should support GitAdapter state extraction', () => {
@@ -77,7 +98,7 @@ describe('VS Code Extension - Canonical Architecture Phase 5', () => {
     const chatRes = await ext.executeCommand('jules.sendMessage', 'Refactor database persistence layer');
     expect(chatRes.status).toBe('MESSAGE_PROCESSED');
     expect(chatRes.userMessage.text).toBe('Refactor database persistence layer');
-    expect(chatRes.julesReply.text).toContain('Jules (v1alpha) processed message');
+    expect(chatRes.julesReply.text).toContain('Jules (Gemini Pro) processed message');
 
     const sessionRes = await ext.executeCommand('jules.getSession');
     expect(sessionRes.session.provider).toBe('google-jules');
