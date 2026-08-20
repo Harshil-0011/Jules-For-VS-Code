@@ -53,12 +53,12 @@ describe('Phase 6-10 Verification, Memory, Multi-Agent & VS Code', () => {
     expect(team.members.length).toBe(1);
   });
 
-  it('should activate VS Code extension and execute commands', () => {
+  it('should activate VS Code extension and execute commands', async () => {
     const ext = activate({});
     expect(ext.status).toBe('ACTIVE');
     expect(ext.registeredCommands).toContain('jules.emergencyStop');
 
-    const result = ext.executeCommand('jules.emergencyStop');
+    const result = await ext.executeCommand('jules.emergencyStop');
     expect(result.status).toBe('EMERGENCY_STOP_TRIGGERED');
   });
 });

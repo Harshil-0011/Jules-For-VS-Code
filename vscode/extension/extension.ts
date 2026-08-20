@@ -1,5 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
+import { JulesAdapter } from '../../server/jules/jules_adapter';
+import { AgentSession, Activity } from '../../server/providers/agent_provider';
 
 export interface WorkspaceInfo {
   rootPath: string;
@@ -29,6 +31,7 @@ export interface ExtensionState {
   activeSessionId?: string;
   emergencyStop: boolean;
   chatHistory: ChatMessage[];
+  julesSession?: AgentSession;
 }
 
 export class WorkspaceAdapter {
@@ -125,6 +128,10 @@ export function activate(context?: any) {
   const gitAdapter = new GitAdapter();
   const eventClient = new EventClient();
 
+  const julesApiKey = process.env.JULES_API_KEY || 'mock-jules-key';
+  const julesApiUrl = process.env.JULES_API_URL || 'https://jules.googleapis.com/v1alpha';
+  const julesAdapter = new JulesAdapter(julesApiKey, julesApiUrl);
+
   eventClient.connect();
 
   const state: ExtensionState = {
@@ -134,50 +141,72 @@ export function activate(context?: any) {
   };
 
   const registeredCommands: { [key: string]: Function } = {
-    'jules.newTask': (payload?: any) => {
+    'jules.newTask': async (payload?: any) => {
       const taskId = payload?.taskId || `task-${Date.now()}`;
       state.activeTaskId = taskId;
+
+      const session = await julesAdapter.createSession(taskId, payload?.role || 'lead-autonomous-agent');
+      state.julesSession = session;
+      state.activeSessionId = session.sessionId;
+
       const taskData = {
         taskId,
+        sessionId: session.sessionId,
         title: payload?.title || 'New Jules Autonomous Task',
         status: 'CREATED',
         createdAt: new Date().toISOString(),
+        capabilities: julesAdapter.getCapabilities(),
       };
       const filePath = workspaceAdapter.createTaskFile(taskId, taskData);
-      return { status: 'TASK_CREATED', taskId, filePath };
+      return { status: 'TASK_CREATED', taskId, sessionId: session.sessionId, filePath };
     },
-    'jules.startTask': () => {
+    'jules.startTask': async () => {
       if (state.activeTaskId) {
+        if (!state.julesSession) {
+          state.julesSession = await julesAdapter.createSession(state.activeTaskId, 'lead-autonomous-agent');
+          state.activeSessionId = state.julesSession.sessionId;
+        }
         workspaceAdapter.createTaskFile(state.activeTaskId, {
           taskId: state.activeTaskId,
+          sessionId: state.activeSessionId,
           status: 'RUNNING',
           startedAt: new Date().toISOString(),
         });
       }
-      return { status: 'TASK_STARTED', taskId: state.activeTaskId };
+      return { status: 'TASK_STARTED', taskId: state.activeTaskId, sessionId: state.activeSessionId };
     },
-    'jules.sendMessage': (text: string) => {
+    'jules.sendMessage': async (text: string) => {
+      const promptText = text || 'Hello Jules';
       const userMsg: ChatMessage = {
         id: `msg-${Date.now()}-user`,
         sender: 'USER',
-        text: text || 'Hello Jules',
+        text: promptText,
         timestamp: new Date().toISOString(),
       };
       state.chatHistory.push(userMsg);
 
-      const julesReplyText = `Jules: I received your request "${userMsg.text}". Analyzing repository workspace and preparing task plan.`;
+      if (!state.julesSession) {
+        const taskId = state.activeTaskId || `task-${Date.now()}`;
+        state.activeTaskId = taskId;
+        state.julesSession = await julesAdapter.createSession(taskId, 'lead-autonomous-agent');
+        state.activeSessionId = state.julesSession.sessionId;
+      }
+
+      const activity: Activity = await julesAdapter.sendMessage(state.activeSessionId!, promptText);
+
       const julesMsg: ChatMessage = {
-        id: `msg-${Date.now()}-jules`,
+        id: activity.id,
         sender: 'JULES',
-        text: julesReplyText,
-        timestamp: new Date().toISOString(),
+        text: activity.content,
+        timestamp: activity.timestamp,
       };
       state.chatHistory.push(julesMsg);
 
       if (state.activeTaskId) {
         workspaceAdapter.createTaskFile(state.activeTaskId, {
           taskId: state.activeTaskId,
-          lastMessage: text,
+          sessionId: state.activeSessionId,
+          lastMessage: promptText,
           chatHistory: state.chatHistory,
           updatedAt: new Date().toISOString(),
         });
@@ -187,16 +216,51 @@ export function activate(context?: any) {
         status: 'MESSAGE_PROCESSED',
         userMessage: userMsg,
         julesReply: julesMsg,
+        activity,
         historyCount: state.chatHistory.length,
       };
     },
     'jules.chat': () => ({
       chatHistory: state.chatHistory,
       activeTaskId: state.activeTaskId,
+      activeSessionId: state.activeSessionId,
     }),
+    'jules.getCapabilities': () => ({
+      provider: julesAdapter.getProviderName(),
+      capabilities: julesAdapter.getCapabilities(),
+    }),
+    'jules.getSession': async (sessionId?: string) => {
+      const targetSessionId = sessionId || state.activeSessionId;
+      if (!targetSessionId) {
+        return { error: 'NO_ACTIVE_SESSION' };
+      }
+      const session = await julesAdapter.getSession(targetSessionId);
+      return { session };
+    },
+    'jules.listActivities': async (sessionId?: string) => {
+      const targetSessionId = sessionId || state.activeSessionId;
+      if (!targetSessionId) {
+        return { activities: [] };
+      }
+      const activities = await julesAdapter.listActivities(targetSessionId);
+      return { sessionId: targetSessionId, activities };
+    },
+    'jules.reconcileSession': async (sessionId?: string) => {
+      const targetSessionId = sessionId || state.activeSessionId;
+      if (!targetSessionId) {
+        return { error: 'NO_ACTIVE_SESSION' };
+      }
+      const reconciliation = await julesAdapter.reconcileSession(targetSessionId);
+      return { reconciliation };
+    },
     'jules.addAgent': (agentName: string) => ({ status: 'AGENT_ADDED', agent: agentName || 'default-agent' }),
     'jules.createTeam': (teamName: string) => ({ status: 'TEAM_CREATED', team: teamName || 'default-team' }),
-    'jules.approvePlan': () => ({ status: 'PLAN_APPROVED' }),
+    'jules.approvePlan': async (planId?: string) => {
+      if (state.activeSessionId) {
+        await julesAdapter.approvePlan(state.activeSessionId, planId || 'plan-default');
+      }
+      return { status: 'PLAN_APPROVED', planId: planId || 'plan-default' };
+    },
     'jules.pauseTask': () => ({ status: 'TASK_PAUSED' }),
     'jules.takeOver': () => ({ status: 'HUMAN_TAKEOVER_ACTIVE' }),
     'jules.verify': () => ({ status: 'VERIFICATION_DISPATCHED' }),
@@ -209,13 +273,13 @@ export function activate(context?: any) {
     },
     'jules.getTaskView': () => ({
       activeTaskId: state.activeTaskId,
+      activeSessionId: state.activeSessionId,
       status: state.activeTaskId ? 'RUNNING' : 'IDLE',
     }),
-    'jules.getActivityView': () => ({
-      activities: [
-        { type: 'TASK_START', timestamp: new Date().toISOString() },
-      ],
-    }),
+    'jules.getActivityView': async () => {
+      const activities = state.activeSessionId ? await julesAdapter.listActivities(state.activeSessionId) : [];
+      return { activities };
+    },
     'jules.getDiffView': () => ({
       gitState: gitAdapter.getGitState(),
     }),
@@ -234,14 +298,15 @@ export function activate(context?: any) {
     version: '4.0.0',
     status: 'ACTIVE',
     state,
+    julesAdapter,
     workspaceInfo: workspaceAdapter.discoverWorkspace(),
     gitState: gitAdapter.getGitState(),
     eventClient,
     registeredCommands: Object.keys(registeredCommands),
-    executeCommand: (cmdName: string, ...args: any[]) => {
+    executeCommand: async (cmdName: string, ...args: any[]) => {
       const fn = registeredCommands[cmdName];
       if (!fn) throw new Error(`VS Code extension command not found: ${cmdName}`);
-      return fn(...args);
+      return await fn(...args);
     },
   };
 }

@@ -17,16 +17,20 @@ describe('VS Code Extension - Canonical Architecture Phase 5', () => {
     }
   });
 
-  it('should activate extension and expose adapters and commands', () => {
+  it('should activate extension and expose adapters, commands, and Jules capabilities', async () => {
     const ext = activate();
     expect(ext.extensionName).toBe('Jules Extension');
     expect(ext.version).toBe('4.0.0');
     expect(ext.status).toBe('ACTIVE');
     expect(ext.registeredCommands).toContain('jules.newTask');
-    expect(ext.registeredCommands).toContain('jules.sendMessage');
-    expect(ext.registeredCommands).toContain('jules.chat');
-    expect(ext.registeredCommands).toContain('jules.getTaskView');
-    expect(ext.registeredCommands).toContain('jules.getDiffView');
+    expect(ext.registeredCommands).toContain('jules.getCapabilities');
+    expect(ext.registeredCommands).toContain('jules.getSession');
+    expect(ext.registeredCommands).toContain('jules.listActivities');
+    expect(ext.registeredCommands).toContain('jules.reconcileSession');
+
+    const capRes = await ext.executeCommand('jules.getCapabilities');
+    expect(capRes.provider).toBe('google-jules');
+    expect(capRes.capabilities).toContain('code_generation');
   });
 
   it('should support WorkspaceAdapter discovery and file creation on host PC', () => {
@@ -66,36 +70,40 @@ describe('VS Code Extension - Canonical Architecture Phase 5', () => {
     expect(client.isConnected()).toBe(false);
   });
 
-  it('should process user chat messages and generate Jules responses', () => {
+  it('should process user chat messages via JulesAdapter and maintain session activities', async () => {
     const ext = activate();
-    ext.executeCommand('jules.newTask', { taskId: 'task-chat-1' });
+    await ext.executeCommand('jules.newTask', { taskId: 'task-chat-jules-1' });
 
-    const chatRes = ext.executeCommand('jules.sendMessage', 'Implement JWT user authentication');
+    const chatRes = await ext.executeCommand('jules.sendMessage', 'Refactor database persistence layer');
     expect(chatRes.status).toBe('MESSAGE_PROCESSED');
-    expect(chatRes.userMessage.text).toBe('Implement JWT user authentication');
-    expect(chatRes.julesReply.text).toContain('Jules: I received your request');
+    expect(chatRes.userMessage.text).toBe('Refactor database persistence layer');
+    expect(chatRes.julesReply.text).toContain('Jules (v1alpha) processed message');
 
-    const chatState = ext.executeCommand('jules.chat');
-    expect(chatState.chatHistory.length).toBe(2);
-    expect(chatState.chatHistory[0].sender).toBe('USER');
-    expect(chatState.chatHistory[1].sender).toBe('JULES');
+    const sessionRes = await ext.executeCommand('jules.getSession');
+    expect(sessionRes.session.provider).toBe('google-jules');
+
+    const activitiesRes = await ext.executeCommand('jules.listActivities');
+    expect(activitiesRes.activities.length).toBeGreaterThan(0);
+
+    const reconciliation = await ext.executeCommand('jules.reconcileSession');
+    expect(reconciliation.reconciliation.providerStatus).toBe('SYNCED');
   });
 
-  it('should execute extension commands and persist task files to disk', () => {
+  it('should execute extension commands and persist task files to disk', async () => {
     const ext = activate();
-    const newRes = ext.executeCommand('jules.newTask', { taskId: 'task-persistent-1', title: 'Real Task' });
+    const newRes = await ext.executeCommand('jules.newTask', { taskId: 'task-persistent-1', title: 'Real Task' });
     expect(newRes.status).toBe('TASK_CREATED');
     expect(newRes.taskId).toBe('task-persistent-1');
     expect(fs.existsSync(newRes.filePath)).toBe(true);
 
-    const taskView = ext.executeCommand('jules.getTaskView');
+    const taskView = await ext.executeCommand('jules.getTaskView');
     expect(taskView.activeTaskId).toBe('task-persistent-1');
     expect(taskView.status).toBe('RUNNING');
 
-    const diffView = ext.executeCommand('jules.getDiffView');
+    const diffView = await ext.executeCommand('jules.getDiffView');
     expect(diffView.gitState).toBeDefined();
 
-    const emergencyRes = ext.executeCommand('jules.emergencyStop');
+    const emergencyRes = await ext.executeCommand('jules.emergencyStop');
     expect(emergencyRes.status).toBe('EMERGENCY_STOP_TRIGGERED');
     expect(ext.state.emergencyStop).toBe(true);
 

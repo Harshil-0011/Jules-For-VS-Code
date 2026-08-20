@@ -68,6 +68,22 @@
       {
         "command": "jules.emergencyStop",
         "title": "Jules: Emergency Stop"
+      },
+      {
+        "command": "jules.getCapabilities",
+        "title": "Jules: Get Capabilities"
+      },
+      {
+        "command": "jules.getSession",
+        "title": "Jules: Get Session"
+      },
+      {
+        "command": "jules.listActivities",
+        "title": "Jules: List Activities"
+      },
+      {
+        "command": "jules.reconcileSession",
+        "title": "Jules: Reconcile Session"
       }
     ]
   }
