@@ -16,11 +16,19 @@ export interface GitAdapterState {
   unstagedFiles: string[];
 }
 
+export interface ChatMessage {
+  id: string;
+  sender: 'USER' | 'JULES';
+  text: string;
+  timestamp: string;
+}
+
 export interface ExtensionState {
   connected: boolean;
   activeTaskId?: string;
   activeSessionId?: string;
   emergencyStop: boolean;
+  chatHistory: ChatMessage[];
 }
 
 export class WorkspaceAdapter {
@@ -122,6 +130,7 @@ export function activate(context?: any) {
   const state: ExtensionState = {
     connected: true,
     emergencyStop: false,
+    chatHistory: [],
   };
 
   const registeredCommands: { [key: string]: Function } = {
@@ -147,6 +156,44 @@ export function activate(context?: any) {
       }
       return { status: 'TASK_STARTED', taskId: state.activeTaskId };
     },
+    'jules.sendMessage': (text: string) => {
+      const userMsg: ChatMessage = {
+        id: `msg-${Date.now()}-user`,
+        sender: 'USER',
+        text: text || 'Hello Jules',
+        timestamp: new Date().toISOString(),
+      };
+      state.chatHistory.push(userMsg);
+
+      const julesReplyText = `Jules: I received your request "${userMsg.text}". Analyzing repository workspace and preparing task plan.`;
+      const julesMsg: ChatMessage = {
+        id: `msg-${Date.now()}-jules`,
+        sender: 'JULES',
+        text: julesReplyText,
+        timestamp: new Date().toISOString(),
+      };
+      state.chatHistory.push(julesMsg);
+
+      if (state.activeTaskId) {
+        workspaceAdapter.createTaskFile(state.activeTaskId, {
+          taskId: state.activeTaskId,
+          lastMessage: text,
+          chatHistory: state.chatHistory,
+          updatedAt: new Date().toISOString(),
+        });
+      }
+
+      return {
+        status: 'MESSAGE_PROCESSED',
+        userMessage: userMsg,
+        julesReply: julesMsg,
+        historyCount: state.chatHistory.length,
+      };
+    },
+    'jules.chat': () => ({
+      chatHistory: state.chatHistory,
+      activeTaskId: state.activeTaskId,
+    }),
     'jules.addAgent': (agentName: string) => ({ status: 'AGENT_ADDED', agent: agentName || 'default-agent' }),
     'jules.createTeam': (teamName: string) => ({ status: 'TEAM_CREATED', team: teamName || 'default-team' }),
     'jules.approvePlan': () => ({ status: 'PLAN_APPROVED' }),

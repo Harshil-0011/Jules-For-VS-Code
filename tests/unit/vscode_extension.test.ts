@@ -23,6 +23,8 @@ describe('VS Code Extension - Canonical Architecture Phase 5', () => {
     expect(ext.version).toBe('4.0.0');
     expect(ext.status).toBe('ACTIVE');
     expect(ext.registeredCommands).toContain('jules.newTask');
+    expect(ext.registeredCommands).toContain('jules.sendMessage');
+    expect(ext.registeredCommands).toContain('jules.chat');
     expect(ext.registeredCommands).toContain('jules.getTaskView');
     expect(ext.registeredCommands).toContain('jules.getDiffView');
   });
@@ -64,6 +66,21 @@ describe('VS Code Extension - Canonical Architecture Phase 5', () => {
     expect(client.isConnected()).toBe(false);
   });
 
+  it('should process user chat messages and generate Jules responses', () => {
+    const ext = activate();
+    ext.executeCommand('jules.newTask', { taskId: 'task-chat-1' });
+
+    const chatRes = ext.executeCommand('jules.sendMessage', 'Implement JWT user authentication');
+    expect(chatRes.status).toBe('MESSAGE_PROCESSED');
+    expect(chatRes.userMessage.text).toBe('Implement JWT user authentication');
+    expect(chatRes.julesReply.text).toContain('Jules: I received your request');
+
+    const chatState = ext.executeCommand('jules.chat');
+    expect(chatState.chatHistory.length).toBe(2);
+    expect(chatState.chatHistory[0].sender).toBe('USER');
+    expect(chatState.chatHistory[1].sender).toBe('JULES');
+  });
+
   it('should execute extension commands and persist task files to disk', () => {
     const ext = activate();
     const newRes = ext.executeCommand('jules.newTask', { taskId: 'task-persistent-1', title: 'Real Task' });
@@ -82,7 +99,6 @@ describe('VS Code Extension - Canonical Architecture Phase 5', () => {
     expect(emergencyRes.status).toBe('EMERGENCY_STOP_TRIGGERED');
     expect(ext.state.emergencyStop).toBe(true);
 
-    // Cleanup generated task file in default workspace
     if (fs.existsSync(newRes.filePath)) {
       fs.unlinkSync(newRes.filePath);
     }
