@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "description": "Production-Grade Jules-First Autonomous Software Engineering Platform",
   "main": "dist/server/index.js",
+  "bin": {
+    "jules": "dist/cli/index.js"
+  },
   "scripts": {
     "build": "tsc",
     "test": "jest --runInBand",
