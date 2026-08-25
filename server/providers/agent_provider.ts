@@ -6,7 +6,14 @@ export type AgentCapability =
   | 'review'
   | 'testing'
   | 'security_analysis'
-  | 'tool_execution';
+  | 'tool_execution'
+  | 'github_issue_assignment'
+  | 'version_bump'
+  | 'bug_fixing'
+  | 'feature_building'
+  | 'cloud_vm_sandbox'
+  | 'async_background_execution'
+  | 'multi_agent_development';
 
 export interface AgentSession {
   sessionId: string;
@@ -14,6 +21,7 @@ export interface AgentSession {
   apiVersion: string;
   status: 'INITIALIZING' | 'ACTIVE' | 'COMPLETED' | 'FAILED' | 'TERMINATED';
   createdAt: string;
+  vmStatus?: 'PROVISIONED' | 'CLONED' | 'RUNNING' | 'TERMINATED';
 }
 
 export interface Activity {

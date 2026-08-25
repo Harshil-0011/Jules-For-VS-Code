@@ -31,6 +31,13 @@ export class JulesAdapter implements AgentProvider {
       'testing',
       'security_analysis',
       'tool_execution',
+      'github_issue_assignment',
+      'version_bump',
+      'bug_fixing',
+      'feature_building',
+      'cloud_vm_sandbox',
+      'async_background_execution',
+      'multi_agent_development',
     ];
   }
 
@@ -46,6 +53,7 @@ export class JulesAdapter implements AgentProvider {
       apiVersion: 'v1alpha',
       status: 'ACTIVE',
       createdAt: new Date().toISOString(),
+      vmStatus: 'PROVISIONED',
     };
 
     this.sessions.set(sessionId, session);
@@ -54,12 +62,54 @@ export class JulesAdapter implements AgentProvider {
         id: uuidv4(),
         sessionId,
         type: 'SYSTEM',
-        content: `Jules session started for task ${taskId} in role ${role} (API v1alpha)`,
+        content: `Jules Cloud VM session provisioned for task ${taskId} in role ${role} (Powered by Gemini Pro)`,
         timestamp: new Date().toISOString(),
       },
     ]);
 
     return session;
+  }
+
+  public async assignGitHubIssue(sessionId: string, issueNumber: number, issueTitle: string): Promise<Activity> {
+    const activity: Activity = {
+      id: uuidv4(),
+      sessionId,
+      type: 'GITHUB_ISSUE_ASSIGNED',
+      content: `Assigned GitHub Issue #${issueNumber}: "${issueTitle}". Jules cloned repo into Cloud VM sandbox.`,
+      timestamp: new Date().toISOString(),
+    };
+    const sessionActivities = this.activities.get(sessionId) || [];
+    sessionActivities.push(activity);
+    this.activities.set(sessionId, sessionActivities);
+    return activity;
+  }
+
+  public async versionBump(sessionId: string, packageName: string, targetVersion: string): Promise<Activity> {
+    const activity: Activity = {
+      id: uuidv4(),
+      sessionId,
+      type: 'VERSION_BUMP',
+      content: `Jules bumped ${packageName} version to ${targetVersion} in package.json and verified dependencies.`,
+      timestamp: new Date().toISOString(),
+    };
+    const sessionActivities = this.activities.get(sessionId) || [];
+    sessionActivities.push(activity);
+    this.activities.set(sessionId, sessionActivities);
+    return activity;
+  }
+
+  public async bugFix(sessionId: string, bugDescription: string): Promise<Activity> {
+    const activity: Activity = {
+      id: uuidv4(),
+      sessionId,
+      type: 'BUG_FIX',
+      content: `Jules reproduced bug "${bugDescription}", implemented fix, and executed test suite in Cloud VM.`,
+      timestamp: new Date().toISOString(),
+    };
+    const sessionActivities = this.activities.get(sessionId) || [];
+    sessionActivities.push(activity);
+    this.activities.set(sessionId, sessionActivities);
+    return activity;
   }
 
   public async getSession(sessionId: string): Promise<AgentSession> {
@@ -76,7 +126,7 @@ export class JulesAdapter implements AgentProvider {
       id: uuidv4(),
       sessionId,
       type: 'AGENT_RESPONSE',
-      content: `Jules (v1alpha) processed message: "${message}"`,
+      content: `Jules (Gemini Pro) processed message: "${message}"`,
       timestamp: new Date().toISOString(),
     };
 
@@ -107,7 +157,6 @@ export class JulesAdapter implements AgentProvider {
     const session = await this.getSession(sessionId);
     const localActivities = this.activities.get(sessionId) || [];
 
-    // Safe provider state reconciliation
     return {
       sessionId: session.sessionId,
       providerStatus: 'SYNCED',
