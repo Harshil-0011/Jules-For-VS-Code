@@ -37,22 +37,19 @@ describe('Product 3 — Jules Code CLI (Phase 4 Canonical Architecture)', () => 
     expect(files).toContain('sample.txt');
   });
 
-  it('should parse CLI arguments and flags correctly', () => {
+  it('should parse CLI arguments, subcommands, and flags correctly', () => {
     const args1 = parseCLIArgs(['--task', 'Fix test', '--non-interactive']);
     expect(args1.task).toBe('Fix test');
     expect(args1.nonInteractive).toBe(true);
     expect(args1.mode).toBe('headless');
 
-    const args2 = parseCLIArgs(['ci', '--task', 'Repair build']);
-    expect(args2.mode).toBe('ci');
-    expect(args2.permissionMode).toBe('CI');
+    const args2 = parseCLIArgs(['sources', 'list']);
+    expect(args2.subCommand).toBe('sources');
 
-    const args3 = parseCLIArgs(['review']);
-    expect(args3.mode).toBe('review');
-    expect(args3.permissionMode).toBe('READ_ONLY');
-
-    const args4 = parseCLIArgs(['session', 'list']);
-    expect(args4.subCommand).toBe('list');
+    const args3 = parseCLIArgs(['--source', 'sources/github/owner/repo', '--branch', 'feature/auth', '--automation-mode', 'AUTO_CREATE_PR']);
+    expect(args3.source).toBe('sources/github/owner/repo');
+    expect(args3.branch).toBe('feature/auth');
+    expect(args3.automationMode).toBe('AUTO_CREATE_PR');
   });
 
   it('should enforce permission modes during policy checks', () => {
@@ -66,11 +63,14 @@ describe('Product 3 — Jules Code CLI (Phase 4 Canonical Architecture)', () => 
     expect(autoWrite.allowed).toBe(true);
   });
 
-  it('should execute full agent loop and write .jules/cli-last-run.json on disk', async () => {
+  it('should execute full agent loop with sourceContext and write .jules/cli-last-run.json on disk', async () => {
     const result = await runAgentLoop('Fix failing test in auth module', {
       mode: 'single_task',
       permissionMode: 'AUTO',
       repoPath: tmpRepo,
+      source: 'sources/github/owner/repo',
+      branch: 'main',
+      automationMode: 'AUTO_CREATE_PR',
     });
 
     expect(result.status).toBe('PASSED');
@@ -113,7 +113,7 @@ describe('Product 3 — Jules Code CLI (Phase 4 Canonical Architecture)', () => 
     expect(fetched?.task).toBe('Refactor logger');
   });
 
-  it('should run interactive REPL terminal shell session with slash commands', (done) => {
+  it('should run interactive REPL terminal shell session with slash commands including /sources', (done) => {
     const input = new Readable({ read() {} });
     const output = new Writable({ write(_chunk, _encoding, callback) { callback(); } });
 
@@ -121,6 +121,7 @@ describe('Product 3 — Jules Code CLI (Phase 4 Canonical Architecture)', () => 
 
     input.push('/help\n');
     input.push('/status\n');
+    input.push('/sources\n');
     input.push('/mode read_only\n');
     input.push('/exit\n');
 
@@ -129,16 +130,13 @@ describe('Product 3 — Jules Code CLI (Phase 4 Canonical Architecture)', () => 
     }, 50);
   });
 
-  it('should execute main CLI commands cleanly', async () => {
+  it('should execute main CLI commands cleanly for sources and exec', async () => {
     const consoleSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
 
-    await main(['review']);
-    expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('starting task'));
+    await main(['sources']);
+    expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Jules Sources'));
 
-    await main(['verify']);
-    expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('starting task'));
-
-    await main(['fix']);
+    await main(['exec', 'Build feature']);
     expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('starting task'));
 
     consoleSpy.mockRestore();

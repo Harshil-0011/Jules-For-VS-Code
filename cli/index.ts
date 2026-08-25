@@ -2,7 +2,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import * as readline from 'readline';
-import { JulesAdapter } from '../server/jules/jules_adapter';
+import { JulesAdapter, JulesAutomationMode, JulesSourceContext } from '../server/jules/jules_adapter';
 
 export type CLIMode = 'interactive' | 'single_task' | 'headless' | 'ci' | 'review' | 'verify';
 export type PermissionMode = 'READ_ONLY' | 'ASK' | 'AUTO' | 'CI';
@@ -148,19 +148,33 @@ export function parseCLIArgs(args: string[]): {
   permissionMode: PermissionMode;
   nonInteractive: boolean;
   subCommand?: string;
+  subAction?: string;
   sessionId?: string;
+  source?: string;
+  branch?: string;
+  automationMode?: JulesAutomationMode;
 } {
   let task = '';
   let mode: CLIMode = args.length === 0 ? 'interactive' : 'single_task';
   let permissionMode: PermissionMode = 'AUTO';
   let nonInteractive = false;
   let subCommand: string | undefined;
+  let subAction: string | undefined;
   let sessionId: string | undefined;
+  let source: string | undefined;
+  let branch: string | undefined;
+  let automationMode: JulesAutomationMode | undefined;
 
   for (let i = 0; i < args.length; i++) {
     const arg = args[i];
     if (arg === '--task' && args[i + 1]) {
       task = args[++i];
+    } else if (arg === '--source' && args[i + 1]) {
+      source = args[++i];
+    } else if (arg === '--branch' && args[i + 1]) {
+      branch = args[++i];
+    } else if (arg === '--automation-mode' && args[i + 1]) {
+      automationMode = args[++i] as JulesAutomationMode;
     } else if (arg === '--non-interactive') {
       nonInteractive = true;
       mode = 'headless';
@@ -176,11 +190,16 @@ export function parseCLIArgs(args: string[]): {
     } else if (arg === 'verify') {
       mode = 'verify';
       permissionMode = 'READ_ONLY';
+    } else if (arg === 'sources' || arg === 'sources') {
+      subCommand = 'sources';
+      subAction = args[i + 1];
+      break;
     } else if (arg === 'exec' && args[i + 1]) {
       task = args.slice(i + 1).join(' ');
       break;
     } else if (arg === 'session' || arg === 'sessions') {
-      subCommand = args[i + 1];
+      subCommand = 'session';
+      subAction = args[i + 1];
       sessionId = args[i + 2];
       break;
     } else if (!task && !arg.startsWith('-')) {
@@ -189,7 +208,7 @@ export function parseCLIArgs(args: string[]): {
     }
   }
 
-  return { task, mode, permissionMode, nonInteractive, subCommand, sessionId };
+  return { task, mode, permissionMode, nonInteractive, subCommand, subAction, sessionId, source, branch, automationMode };
 }
 
 export async function runAgentLoop(
@@ -199,6 +218,9 @@ export async function runAgentLoop(
     permissionMode?: PermissionMode;
     repoPath?: string;
     apiKey?: string;
+    source?: string;
+    branch?: string;
+    automationMode?: JulesAutomationMode;
   } = {}
 ): Promise<AgentLoopResult> {
   const mode = options.mode || 'single_task';
@@ -248,15 +270,19 @@ export async function runAgentLoop(
   }
 
   const julesAdapter = new JulesAdapter(options.apiKey || 'mock-jules-key', 'https://jules.googleapis.com/v1alpha');
-  const agentSession = await julesAdapter.createSession(sessionId, 'cli-agent');
-  const plan = `Jules Plan for "${task}": 1. Inspect repository -> 2. Generate changes -> 3. Run verification -> 4. Complete`;
+  const sourceContext: JulesSourceContext = {
+    source: options.source || `sources/github/${repo.projectName}`,
+    startingBranch: options.branch || repo.branch,
+  };
+  const agentSession = await julesAdapter.createSessionWithSourceContext(sourceContext, task, options.automationMode || 'AUTO_CREATE_PR');
+  const plan = `Jules Plan for "${task}": 1. Connect source ${sourceContext.source} -> 2. Generate changes on ${sourceContext.startingBranch} -> 3. Run verification -> 4. Create PR (${options.automationMode || 'AUTO_CREATE_PR'})`;
 
   logActivity(`[PLAN] ${plan}`);
   logActivity(`[EXECUTE] Executing task via Jules Cloud VM Session (${agentSession.sessionId})`);
 
   let changesApplied = false;
   if (permissionMode !== 'READ_ONLY') {
-    toolkit.writeFile('.jules/cli-last-run.json', JSON.stringify({ task, sessionId, timestamp: new Date().toISOString() }, null, 2));
+    toolkit.writeFile('.jules/cli-last-run.json', JSON.stringify({ task, sessionId: agentSession.sessionId, timestamp: new Date().toISOString() }, null, 2));
     changesApplied = true;
     logActivity(`[OBSERVE] Edits applied successfully to repository workspace`);
   } else {
@@ -268,7 +294,7 @@ export async function runAgentLoop(
   logActivity(`[COMPLETE] Task "${task}" finished with status PASSED`);
 
   const session: CLISession = {
-    sessionId,
+    sessionId: agentSession.sessionId,
     task,
     mode,
     permissionMode,
@@ -282,7 +308,7 @@ export async function runAgentLoop(
   sessionMgr.saveSession(session);
 
   return {
-    sessionId,
+    sessionId: agentSession.sessionId,
     task,
     status: 'PASSED',
     plan,
@@ -309,6 +335,7 @@ export function startInteractiveREPL(
   console.log('  \x1b[36m/status\x1b[0m   Inspect active workspace & git branch');
   console.log('  \x1b[36m/mode\x1b[0m     Switch permission mode (AUTO, ASK, READ_ONLY, CI)');
   console.log('  \x1b[36m/session\x1b[0m  List or view CLI session history');
+  console.log('  \x1b[36m/sources\x1b[0m  List connected Jules repository sources');
   console.log('  \x1b[36m/exit\x1b[0m     Exit the Jules Code shell\n');
 
   const rl = readline.createInterface({
@@ -337,6 +364,7 @@ export function startInteractiveREPL(
       console.log('  \x1b[36m/status\x1b[0m                  Show workspace repository & git branch');
       console.log('  \x1b[36m/mode <mode>\x1b[0m            Set permission mode (AUTO, ASK, READ_ONLY, CI)');
       console.log('  \x1b[36m/session list\x1b[0m           List recorded CLI sessions');
+      console.log('  \x1b[36m/sources\x1b[0m                List connected Jules repository sources');
       console.log('  \x1b[36m/clear\x1b[0m                  Clear terminal output');
       console.log('  \x1b[36m/exit\x1b[0m                   Exit interactive shell\n');
       rl.prompt();
@@ -350,6 +378,16 @@ export function startInteractiveREPL(
       console.log(`  Project: ${currentRepo.projectName}`);
       console.log(`  Branch: ${currentRepo.branch}`);
       console.log(`  Package Manager: ${currentRepo.packageManager}\n`);
+      rl.prompt();
+      return;
+    }
+
+    if (input === '/sources') {
+      const julesAdapter = new JulesAdapter(process.env.JULES_API_KEY || 'mock-jules-key');
+      const sources = await julesAdapter.listSources();
+      console.log(`\n\x1b[1mConnected Jules Sources (${sources.length}):\x1b[0m`);
+      sources.forEach(s => console.log(`  - [${s.id}] ${s.name} (${s.githubRepository} @ ${s.defaultBranch})`));
+      console.log('');
       rl.prompt();
       return;
     }
@@ -399,15 +437,23 @@ export function startInteractiveREPL(
 export async function main(args: string[] = process.argv.slice(2)): Promise<void> {
   const parsed = parseCLIArgs(args);
 
-  if (parsed.subCommand) {
+  if (parsed.subCommand === 'sources') {
+    const julesAdapter = new JulesAdapter(process.env.JULES_API_KEY || 'mock-jules-key');
+    const sources = await julesAdapter.listSources();
+    console.log(`Jules Sources (${sources.length}):`);
+    sources.forEach(s => console.log(`- [${s.id}] ${s.name} (${s.githubRepository})`));
+    return;
+  }
+
+  if (parsed.subCommand === 'session') {
     const sessionMgr = new SessionManager();
-    if (parsed.subCommand === 'list') {
+    if (parsed.subAction === 'list') {
       const sessions = sessionMgr.listSessions();
       console.log(`Jules CLI Sessions (${sessions.length}):`);
       sessions.forEach(s => console.log(`- [${s.sessionId}] ${s.task} (${s.status})`));
       return;
     }
-    if (parsed.subCommand === 'resume' && parsed.sessionId) {
+    if (parsed.subAction === 'resume' && parsed.sessionId) {
       const s = sessionMgr.getSession(parsed.sessionId);
       if (!s) {
         console.error(`Session ${parsed.sessionId} not found.`);
@@ -425,7 +471,13 @@ export async function main(args: string[] = process.argv.slice(2)): Promise<void
 
   const finalTask = parsed.task || 'Interactive coding task';
   console.log(`Jules Code CLI starting task: "${finalTask}" [Mode: ${parsed.mode}, Permission: ${parsed.permissionMode}]`);
-  const result = await runAgentLoop(finalTask, { mode: parsed.mode, permissionMode: parsed.permissionMode });
+  const result = await runAgentLoop(finalTask, {
+    mode: parsed.mode,
+    permissionMode: parsed.permissionMode,
+    source: parsed.source,
+    branch: parsed.branch,
+    automationMode: parsed.automationMode,
+  });
   console.log('Result:', result.status);
 }
 
