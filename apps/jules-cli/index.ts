@@ -2,7 +2,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import * as readline from 'readline';
-import { JulesAdapter, JulesAutomationMode, JulesSourceContext } from '../server/jules/jules_adapter';
+import { JulesAdapter, JulesAutomationMode, JulesSourceContext } from '../../server/jules/jules_adapter';
 
 export type CLIMode = 'interactive' | 'single_task' | 'headless' | 'ci' | 'review' | 'verify';
 export type PermissionMode = 'READ_ONLY' | 'ASK' | 'AUTO' | 'CI';

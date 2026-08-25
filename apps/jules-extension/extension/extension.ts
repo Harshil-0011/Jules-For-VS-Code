@@ -1,7 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import { JulesAdapter } from '../../server/jules/jules_adapter';
-import { AgentSession, Activity } from '../../server/providers/agent_provider';
+import { JulesAdapter } from '../../../server/jules/jules_adapter';
+import { AgentSession, Activity } from '../../../server/providers/agent_provider';
 
 export interface WorkspaceInfo {
   rootPath: string;

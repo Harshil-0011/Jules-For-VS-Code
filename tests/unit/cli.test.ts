@@ -1,7 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { Readable, Writable } from 'stream';
-import { runAgentLoop, inspectRepository, checkPolicy, SessionManager, parseCLIArgs, CLIToolkit, startInteractiveREPL, main } from '../../cli/index';
+import { runAgentLoop, inspectRepository, checkPolicy, SessionManager, parseCLIArgs, CLIToolkit, startInteractiveREPL, main } from '../../apps/jules-cli/index';
 
 describe('Product 3 — Jules Code CLI (Phase 4 Canonical Architecture)', () => {
   const tmpRepo = path.join(process.cwd(), '.tmp_cli_test_repo');

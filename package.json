@@ -4,7 +4,7 @@
   "description": "Production-Grade Jules-First Autonomous Software Engineering Platform",
   "main": "dist/server/index.js",
   "bin": {
-    "jules": "dist/cli/index.js"
+    "jules": "dist/apps/jules-cli/index.js"
   },
   "scripts": {
     "build": "tsc",
