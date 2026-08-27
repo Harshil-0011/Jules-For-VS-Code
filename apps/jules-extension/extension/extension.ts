@@ -38,14 +38,23 @@ export class WorkspaceAdapter {
   constructor(private rootPath: string = process.cwd()) {}
 
   public discoverWorkspace(): WorkspaceInfo {
-    const gitDir = path.join(this.rootPath, '.git');
-    const hasGit = fs.existsSync(gitDir);
-    return {
-      rootPath: this.rootPath,
-      projectName: path.basename(this.rootPath) || 'unknown',
-      hasGitRepo: hasGit,
-      packageManager: fs.existsSync(path.join(this.rootPath, 'package-lock.json')) ? 'npm' : 'unknown',
-    };
+    try {
+      const gitDir = path.join(this.rootPath, '.git');
+      const hasGit = fs.existsSync(gitDir);
+      return {
+        rootPath: this.rootPath,
+        projectName: path.basename(this.rootPath) || 'unknown',
+        hasGitRepo: hasGit,
+        packageManager: fs.existsSync(path.join(this.rootPath, 'package-lock.json')) ? 'npm' : 'unknown',
+      };
+    } catch (_) {
+      return {
+        rootPath: this.rootPath || process.cwd(),
+        projectName: 'unknown',
+        hasGitRepo: false,
+        packageManager: 'npm',
+      };
+    }
   }
 
   public ensureJulesDir(): string {
@@ -57,10 +66,16 @@ export class WorkspaceAdapter {
   }
 
   public createTaskFile(taskId: string, data: any): string {
-    const julesDir = this.ensureJulesDir();
-    const taskFilePath = path.join(julesDir, `${taskId}.json`);
-    fs.writeFileSync(taskFilePath, JSON.stringify(data, null, 2), 'utf-8');
-    return taskFilePath;
+    try {
+      const julesDir = this.ensureJulesDir();
+      const safeTaskId = (taskId || 'task-unknown').replace(/[^a-zA-Z0-9_-]/g, '_');
+      const taskFilePath = path.join(julesDir, `${safeTaskId}.json`);
+      fs.writeFileSync(taskFilePath, JSON.stringify(data || {}, null, 2), 'utf-8');
+      return taskFilePath;
+    } catch (err: any) {
+      console.warn(`[WorkspaceAdapter] createTaskFile warning: ${err.message}`);
+      return path.join(this.rootPath, `${taskId}.json`);
+    }
   }
 }
 
@@ -68,16 +83,16 @@ export class GitAdapter {
   constructor(private rootPath: string = process.cwd()) {}
 
   public getGitState(): GitAdapterState {
-    const headFile = path.join(this.rootPath, '.git', 'HEAD');
     let branch = 'main';
-    if (fs.existsSync(headFile)) {
-      try {
+    try {
+      const headFile = path.join(this.rootPath, '.git', 'HEAD');
+      if (fs.existsSync(headFile)) {
         const content = fs.readFileSync(headFile, 'utf-8').trim();
         if (content.startsWith('ref: refs/heads/')) {
           branch = content.replace('ref: refs/heads/', '');
         }
-      } catch (_) {}
-    }
+      }
+    } catch (_) {}
 
     return {
       branch,
@@ -107,6 +122,7 @@ export class EventClient {
   }
 
   public on(event: string, callback: Function): void {
+    if (!event || typeof callback !== 'function') return;
     if (!this.listeners.has(event)) {
       this.listeners.set(event, []);
     }
@@ -116,7 +132,11 @@ export class EventClient {
   public emit(event: string, data: any): void {
     const callbacks = this.listeners.get(event) || [];
     for (const cb of callbacks) {
-      cb(data);
+      try {
+        cb(data);
+      } catch (err: any) {
+        console.warn(`[EventClient] Error emitting event ${event}: ${err.message}`);
+      }
     }
   }
 }
@@ -140,8 +160,15 @@ export function activate(context?: any) {
     chatHistory: [],
   };
 
+  const checkEmergencyStop = () => {
+    if (state.emergencyStop) {
+      throw new Error('EMERGENCY_STOP_ACTIVE: Operations blocked by global emergency stop');
+    }
+  };
+
   const registeredCommands: { [key: string]: Function } = {
     'jules.newTask': async (payload?: any) => {
+      checkEmergencyStop();
       const taskId = payload?.taskId || `task-${Date.now()}`;
       state.activeTaskId = taskId;
 
@@ -161,6 +188,7 @@ export function activate(context?: any) {
       return { status: 'TASK_CREATED', taskId, sessionId: session.sessionId, filePath };
     },
     'jules.startTask': async () => {
+      checkEmergencyStop();
       if (state.activeTaskId) {
         if (!state.julesSession) {
           state.julesSession = await julesAdapter.createSession(state.activeTaskId, 'lead-autonomous-agent');
@@ -176,6 +204,7 @@ export function activate(context?: any) {
       return { status: 'TASK_STARTED', taskId: state.activeTaskId, sessionId: state.activeSessionId };
     },
     'jules.sendMessage': async (text: string) => {
+      checkEmergencyStop();
       const promptText = text || 'Hello Jules';
       const userMsg: ChatMessage = {
         id: `msg-${Date.now()}-user`,
@@ -221,6 +250,10 @@ export function activate(context?: any) {
       };
     },
     'jules.assignGitHubIssue': async (payload: { issueNumber: number; issueTitle: string }) => {
+      checkEmergencyStop();
+      if (!payload || !payload.issueNumber) {
+        throw new Error('INVALID_ARGUMENT: issueNumber is required');
+      }
       if (!state.julesSession) {
         const taskId = `task-github-${payload.issueNumber}`;
         state.activeTaskId = taskId;
@@ -230,11 +263,15 @@ export function activate(context?: any) {
       const activity = await julesAdapter.assignGitHubIssue(
         state.activeSessionId!,
         payload.issueNumber,
-        payload.issueTitle
+        payload.issueTitle || 'GitHub Issue'
       );
       return { status: 'GITHUB_ISSUE_ASSIGNED', activity };
     },
     'jules.versionBump': async (payload: { packageName: string; targetVersion: string }) => {
+      checkEmergencyStop();
+      if (!payload || !payload.packageName || !payload.targetVersion) {
+        throw new Error('INVALID_ARGUMENT: packageName and targetVersion are required');
+      }
       if (!state.julesSession) {
         const taskId = `task-vbump-${Date.now()}`;
         state.activeTaskId = taskId;
@@ -249,6 +286,10 @@ export function activate(context?: any) {
       return { status: 'VERSION_BUMP_COMPLETE', activity };
     },
     'jules.bugFix': async (payload: { bugDescription: string }) => {
+      checkEmergencyStop();
+      if (!payload || !payload.bugDescription) {
+        throw new Error('INVALID_ARGUMENT: bugDescription is required');
+      }
       if (!state.julesSession) {
         const taskId = `task-bugfix-${Date.now()}`;
         state.activeTaskId = taskId;
@@ -301,6 +342,7 @@ export function activate(context?: any) {
     'jules.addAgent': (agentName: string) => ({ status: 'AGENT_ADDED', agent: agentName || 'default-agent' }),
     'jules.createTeam': (teamName: string) => ({ status: 'TEAM_CREATED', team: teamName || 'default-team' }),
     'jules.approvePlan': async (planId?: string) => {
+      checkEmergencyStop();
       if (state.activeSessionId) {
         await julesAdapter.approvePlan(state.activeSessionId, planId || 'plan-default');
       }
@@ -315,6 +357,10 @@ export function activate(context?: any) {
     'jules.emergencyStop': () => {
       state.emergencyStop = true;
       return { status: 'EMERGENCY_STOP_TRIGGERED' };
+    },
+    'jules.resetEmergencyStop': () => {
+      state.emergencyStop = false;
+      return { status: 'EMERGENCY_STOP_RESET' };
     },
     'jules.getTaskView': () => ({
       activeTaskId: state.activeTaskId,

@@ -68,18 +68,22 @@ export class WorkspaceExplorer {
   constructor(private repoPath: string = process.cwd()) {}
 
   public listFiles(dirPath: string = '.'): FileExplorerItem[] {
-    const fullPath = path.resolve(this.repoPath, dirPath);
-    if (!fs.existsSync(fullPath)) return [];
+    try {
+      const fullPath = path.resolve(this.repoPath, dirPath);
+      if (!fs.existsSync(fullPath)) return [];
 
-    const entries = fs.readdirSync(fullPath, { withFileTypes: true });
-    return entries.map(e => {
-      const relPath = path.join(dirPath === '.' ? '' : dirPath, e.name);
-      return {
-        name: e.name,
-        relativePath: relPath,
-        isDirectory: e.isDirectory(),
-      };
-    });
+      const entries = fs.readdirSync(fullPath, { withFileTypes: true });
+      return entries.map(e => {
+        const relPath = path.join(dirPath === '.' ? '' : dirPath, e.name);
+        return {
+          name: e.name,
+          relativePath: relPath,
+          isDirectory: e.isDirectory(),
+        };
+      });
+    } catch (_) {
+      return [];
+    }
   }
 }
 
@@ -89,10 +93,17 @@ export class CodeEditor {
   constructor(private repoPath: string = process.cwd()) {}
 
   public openFile(filePath: string): EditorBuffer {
+    if (!filePath) {
+      throw new Error('INVALID_PATH: filePath is required');
+    }
     const fullPath = path.resolve(this.repoPath, filePath);
     let content = '';
     if (fs.existsSync(fullPath)) {
-      content = fs.readFileSync(fullPath, 'utf-8');
+      try {
+        content = fs.readFileSync(fullPath, 'utf-8');
+      } catch (_) {
+        content = '';
+      }
     }
 
     const ext = path.extname(filePath).replace('.', '');
@@ -111,7 +122,7 @@ export class CodeEditor {
 
   public editBuffer(filePath: string, newContent: string): EditorBuffer {
     const buffer = this.buffers.get(filePath) || this.openFile(filePath);
-    buffer.content = newContent;
+    buffer.content = newContent || '';
     buffer.isDirty = true;
     return buffer;
   }
@@ -120,13 +131,17 @@ export class CodeEditor {
     const buffer = this.buffers.get(filePath);
     if (!buffer) return;
 
-    const fullPath = path.resolve(this.repoPath, filePath);
-    const parent = path.dirname(fullPath);
-    if (!fs.existsSync(parent)) {
-      fs.mkdirSync(parent, { recursive: true });
+    try {
+      const fullPath = path.resolve(this.repoPath, filePath);
+      const parent = path.dirname(fullPath);
+      if (!fs.existsSync(parent)) {
+        fs.mkdirSync(parent, { recursive: true });
+      }
+      fs.writeFileSync(fullPath, buffer.content, 'utf-8');
+      buffer.isDirty = false;
+    } catch (err: any) {
+      console.warn(`[CodeEditor] saveBuffer failed: ${err.message}`);
     }
-    fs.writeFileSync(fullPath, buffer.content, 'utf-8');
-    buffer.isDirty = false;
   }
 
   public getBuffer(filePath: string): EditorBuffer | undefined {
@@ -138,31 +153,35 @@ export class SearchEngine {
   constructor(private repoPath: string = process.cwd()) {}
 
   public search(query: string, maxResults: number = 20): SearchMatch[] {
+    if (!query || query.trim() === '') return [];
+
     const matches: SearchMatch[] = [];
     const searchFile = (dir: string) => {
       if (matches.length >= maxResults) return;
-      const entries = fs.readdirSync(dir, { withFileTypes: true });
-      for (const entry of entries) {
-        if (entry.name === 'node_modules' || entry.name === '.git' || entry.name === 'dist' || entry.name === '.jules') continue;
-        const full = path.join(dir, entry.name);
-        if (entry.isDirectory()) {
-          searchFile(full);
-        } else if (entry.isFile()) {
-          try {
-            const content = fs.readFileSync(full, 'utf-8');
-            const lines = content.split('\n');
-            lines.forEach((line, idx) => {
-              if (line.includes(query) && matches.length < maxResults) {
-                matches.push({
-                  filePath: path.relative(this.repoPath, full),
-                  line: idx + 1,
-                  content: line.trim(),
-                });
-              }
-            });
-          } catch (_) {}
+      try {
+        const entries = fs.readdirSync(dir, { withFileTypes: true });
+        for (const entry of entries) {
+          if (entry.name === 'node_modules' || entry.name === '.git' || entry.name === 'dist' || entry.name === '.jules') continue;
+          const full = path.join(dir, entry.name);
+          if (entry.isDirectory()) {
+            searchFile(full);
+          } else if (entry.isFile()) {
+            try {
+              const content = fs.readFileSync(full, 'utf-8');
+              const lines = content.split('\n');
+              lines.forEach((line, idx) => {
+                if (line.includes(query) && matches.length < maxResults) {
+                  matches.push({
+                    filePath: path.relative(this.repoPath, full),
+                    line: idx + 1,
+                    content: line.trim(),
+                  });
+                }
+              });
+            } catch (_) {}
+          }
         }
-      }
+      } catch (_) {}
     };
 
     searchFile(this.repoPath);
@@ -174,6 +193,9 @@ export class TerminalShell {
   constructor(private repoPath: string = process.cwd()) {}
 
   public executeCommand(command: string): TerminalOutput {
+    if (!command || command.trim() === '') {
+      return { command: '', exitCode: 1, stdout: '', stderr: 'ERROR: Empty command' };
+    }
     return {
       command,
       exitCode: 0,
@@ -187,21 +209,21 @@ export class GitWorkspace {
   constructor(private repoPath: string = process.cwd()) {}
 
   public getStatus(): GitStatus {
-    const gitDir = path.join(this.repoPath, '.git');
-    const hasGit = fs.existsSync(gitDir);
     let branch = 'main';
+    try {
+      const gitDir = path.join(this.repoPath, '.git');
+      const hasGit = fs.existsSync(gitDir);
 
-    if (hasGit) {
-      const headFile = path.join(gitDir, 'HEAD');
-      if (fs.existsSync(headFile)) {
-        try {
+      if (hasGit) {
+        const headFile = path.join(gitDir, 'HEAD');
+        if (fs.existsSync(headFile)) {
           const content = fs.readFileSync(headFile, 'utf-8').trim();
           if (content.startsWith('ref: refs/heads/')) {
             branch = content.replace('ref: refs/heads/', '');
           }
-        } catch (_) {}
+        }
       }
-    }
+    } catch (_) {}
 
     return {
       branch,
@@ -229,6 +251,13 @@ export class DiagnosticsEngine {
 
 export class WebPreviewBrowser {
   public renderPreview(url: string = 'http://localhost:3000'): WebPreviewState {
+    if (!url || !url.startsWith('http')) {
+      return {
+        url: url || 'invalid-url',
+        status: 'ERROR',
+        contentSnippet: '<html><body><h1>Invalid URL</h1></body></html>',
+      };
+    }
     return {
       url,
       status: 'READY',
@@ -244,7 +273,7 @@ export class TaskManager {
     const id = `ide-task-${Date.now()}`;
     const task: IDETask = {
       id,
-      title,
+      title: title || 'Untitled Task',
       status: 'CREATED',
       filesTouched: [],
       createdAt: new Date().toISOString(),
@@ -294,7 +323,7 @@ export class AgentTeamPanel {
   }
 
   public createTeam(teamId: string, name: string): Team {
-    return this.orchestrator.createTeam(teamId, 'default-tenant', name, [
+    return this.orchestrator.createTeam(teamId, 'default-tenant', name || 'Default Team', [
       { agentId: 'jules-lead', providerName: 'google-jules', role: 'LEAD' },
       { agentId: 'jules-reviewer', providerName: 'google-jules', role: 'SECURITY_REVIEWER' },
     ]);
@@ -307,7 +336,7 @@ export class AgentTeamPanel {
     verified: boolean;
   }> {
     const session = await this.julesAdapter.createSession(taskId, 'lead-ide-agent');
-    const activity = await this.julesAdapter.sendMessage(session.sessionId, `User Intent: "${userIntent}"`);
+    const activity = await this.julesAdapter.sendMessage(session.sessionId, `User Intent: "${userIntent || 'Default intent'}"`);
 
     let buffer: EditorBuffer | undefined;
     if (targetFile) {

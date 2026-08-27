@@ -46,24 +46,30 @@ export class CLIToolkit {
   constructor(private repoPath: string = process.cwd()) {}
 
   public readFile(filePath: string): string {
+    if (!filePath) throw new Error('INVALID_PATH: filePath is required');
     const fullPath = path.resolve(this.repoPath, filePath);
     if (!fs.existsSync(fullPath)) throw new Error(`File not found: ${filePath}`);
     return fs.readFileSync(fullPath, 'utf-8');
   }
 
   public writeFile(filePath: string, content: string): void {
+    if (!filePath) throw new Error('INVALID_PATH: filePath is required');
     const fullPath = path.resolve(this.repoPath, filePath);
     const parentDir = path.dirname(fullPath);
     if (!fs.existsSync(parentDir)) {
       fs.mkdirSync(parentDir, { recursive: true });
     }
-    fs.writeFileSync(fullPath, content, 'utf-8');
+    fs.writeFileSync(fullPath, content || '', 'utf-8');
   }
 
   public listFiles(dirPath: string = '.'): string[] {
-    const fullPath = path.resolve(this.repoPath, dirPath);
-    if (!fs.existsSync(fullPath)) return [];
-    return fs.readdirSync(fullPath);
+    try {
+      const fullPath = path.resolve(this.repoPath, dirPath);
+      if (!fs.existsSync(fullPath)) return [];
+      return fs.readdirSync(fullPath);
+    } catch (_) {
+      return [];
+    }
   }
 }
 
@@ -78,27 +84,29 @@ export function checkPolicy(action: 'read' | 'write' | 'execute' | 'merge', perm
 }
 
 export function inspectRepository(repoPath: string = process.cwd()): RepositoryInspection {
-  const gitDir = path.join(repoPath, '.git');
-  const hasGit = fs.existsSync(gitDir);
   let branch = 'main';
+  let hasGit = false;
 
-  if (hasGit) {
-    const headFile = path.join(gitDir, 'HEAD');
-    if (fs.existsSync(headFile)) {
-      try {
+  try {
+    const gitDir = path.join(repoPath, '.git');
+    hasGit = fs.existsSync(gitDir);
+
+    if (hasGit) {
+      const headFile = path.join(gitDir, 'HEAD');
+      if (fs.existsSync(headFile)) {
         const content = fs.readFileSync(headFile, 'utf-8').trim();
         if (content.startsWith('ref: refs/heads/')) {
           branch = content.replace('ref: refs/heads/', '');
         }
-      } catch (_) {}
+      }
     }
-  }
+  } catch (_) {}
 
   const pkgJson = path.join(repoPath, 'package.json');
   const hasPackageJson = fs.existsSync(pkgJson);
 
   return {
-    rootPath: repoPath,
+    rootPath: repoPath || process.cwd(),
     projectName: path.basename(repoPath) || 'unknown',
     hasGit,
     branch,
@@ -121,24 +129,39 @@ export class SessionManager {
   }
 
   public saveSession(session: CLISession): string {
-    const filePath = path.join(this.sessionsDir, `${session.sessionId}.json`);
+    const safeSessionId = (session.sessionId || 'session-unknown').replace(/[^a-zA-Z0-9_-]/g, '_');
+    const filePath = path.join(this.sessionsDir, `${safeSessionId}.json`);
     fs.writeFileSync(filePath, JSON.stringify(session, null, 2), 'utf-8');
     return filePath;
   }
 
   public listSessions(): CLISession[] {
     if (!fs.existsSync(this.sessionsDir)) return [];
-    const files = fs.readdirSync(this.sessionsDir).filter(f => f.endsWith('.json'));
-    return files.map(f => {
-      const content = fs.readFileSync(path.join(this.sessionsDir, f), 'utf-8');
-      return JSON.parse(content);
-    });
+    try {
+      const files = fs.readdirSync(this.sessionsDir).filter(f => f.endsWith('.json'));
+      return files.map(f => {
+        try {
+          const content = fs.readFileSync(path.join(this.sessionsDir, f), 'utf-8');
+          return JSON.parse(content);
+        } catch (_) {
+          return null;
+        }
+      }).filter((s): s is CLISession => s !== null);
+    } catch (_) {
+      return [];
+    }
   }
 
   public getSession(sessionId: string): CLISession | null {
-    const filePath = path.join(this.sessionsDir, `${sessionId}.json`);
+    if (!sessionId) return null;
+    const safeSessionId = sessionId.replace(/[^a-zA-Z0-9_-]/g, '_');
+    const filePath = path.join(this.sessionsDir, `${safeSessionId}.json`);
     if (!fs.existsSync(filePath)) return null;
-    return JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+    try {
+      return JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+    } catch (_) {
+      return null;
+    }
   }
 }
 
@@ -190,7 +213,7 @@ export function parseCLIArgs(args: string[]): {
     } else if (arg === 'verify') {
       mode = 'verify';
       permissionMode = 'READ_ONLY';
-    } else if (arg === 'sources' || arg === 'sources') {
+    } else if (arg === 'sources') {
       subCommand = 'sources';
       subAction = args[i + 1];
       break;
@@ -239,7 +262,7 @@ export async function runAgentLoop(
     console.log(`\x1b[36m${stepMsg}\x1b[0m`);
   };
 
-  logActivity(`[INTERPRET] Processing task: "${task}"`);
+  logActivity(`[INTERPRET] Processing task: "${task || 'Default prompt'}"`);
   logActivity(`[INSPECT] Repository: ${repo.projectName} | Branch: ${repo.branch} | PM: ${repo.packageManager}`);
 
   const policyCheck = checkPolicy('write', permissionMode);
@@ -247,7 +270,7 @@ export async function runAgentLoop(
     logActivity(`[POLICY CHECK] ${policyCheck.reason}`);
     const blockedSession: CLISession = {
       sessionId,
-      task,
+      task: task || 'Blocked task',
       mode,
       permissionMode,
       repository: repo.projectName,
@@ -260,7 +283,7 @@ export async function runAgentLoop(
     sessionMgr.saveSession(blockedSession);
     return {
       sessionId,
-      task,
+      task: task || 'Blocked task',
       status: 'BLOCKED',
       plan: `Plan blocked by policy: ${policyCheck.reason}`,
       changesApplied: false,
@@ -274,7 +297,7 @@ export async function runAgentLoop(
     source: options.source || `sources/github/${repo.projectName}`,
     startingBranch: options.branch || repo.branch,
   };
-  const agentSession = await julesAdapter.createSessionWithSourceContext(sourceContext, task, options.automationMode || 'AUTO_CREATE_PR');
+  const agentSession = await julesAdapter.createSessionWithSourceContext(sourceContext, task || 'Default task', options.automationMode || 'AUTO_CREATE_PR');
   const plan = `Jules Plan for "${task}": 1. Connect source ${sourceContext.source} -> 2. Generate changes on ${sourceContext.startingBranch} -> 3. Run verification -> 4. Create PR (${options.automationMode || 'AUTO_CREATE_PR'})`;
 
   logActivity(`[PLAN] ${plan}`);
@@ -295,7 +318,7 @@ export async function runAgentLoop(
 
   const session: CLISession = {
     sessionId: agentSession.sessionId,
-    task,
+    task: task || 'Task',
     mode,
     permissionMode,
     repository: repo.projectName,
@@ -309,7 +332,7 @@ export async function runAgentLoop(
 
   return {
     sessionId: agentSession.sessionId,
-    task,
+    task: task || 'Task',
     status: 'PASSED',
     plan,
     changesApplied,
