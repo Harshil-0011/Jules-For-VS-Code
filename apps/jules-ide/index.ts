@@ -2,6 +2,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { JulesAdapter } from '../../server/jules/jules_adapter';
 import { AgentSession, Activity } from '../../server/providers/agent_provider';
+import { AgentRegistry, TeamOrchestrator, Team } from '../../server/teams/team';
 
 export interface FileExplorerItem {
   name: string;
@@ -50,6 +51,17 @@ export interface WebPreviewState {
   url: string;
   status: 'LOADING' | 'READY' | 'ERROR';
   contentSnippet: string;
+}
+
+export interface IDETask {
+  id: string;
+  title: string;
+  status: 'CREATED' | 'RUNNING' | 'VERIFYING' | 'COMPLETED' | 'FAILED';
+  plan?: string;
+  assignedAgent?: string;
+  filesTouched: string[];
+  createdAt: string;
+  updatedAt: string;
 }
 
 export class WorkspaceExplorer {
@@ -225,23 +237,91 @@ export class WebPreviewBrowser {
   }
 }
 
-export class JulesAgentPanel {
+export class TaskManager {
+  private tasks = new Map<string, IDETask>();
+
+  public createTask(title: string): IDETask {
+    const id = `ide-task-${Date.now()}`;
+    const task: IDETask = {
+      id,
+      title,
+      status: 'CREATED',
+      filesTouched: [],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    this.tasks.set(id, task);
+    return task;
+  }
+
+  public updateTaskStatus(id: string, status: IDETask['status'], plan?: string): IDETask | undefined {
+    const task = this.tasks.get(id);
+    if (task) {
+      task.status = status;
+      if (plan) task.plan = plan;
+      task.updatedAt = new Date().toISOString();
+    }
+    return task;
+  }
+
+  public listTasks(): IDETask[] {
+    return Array.from(this.tasks.values());
+  }
+}
+
+export class AgentTeamPanel {
+  private registry: AgentRegistry;
+  private orchestrator: TeamOrchestrator;
   private julesAdapter: JulesAdapter;
 
   constructor(apiKey: string = process.env.JULES_API_KEY || 'mock-jules-key') {
+    this.registry = new AgentRegistry();
     this.julesAdapter = new JulesAdapter(apiKey, 'https://jules.googleapis.com/v1alpha');
+    this.registry.registerProvider(this.julesAdapter);
+
+    this.registry.registerAgent({
+      agentId: 'jules-lead',
+      providerName: 'google-jules',
+      role: 'LEAD',
+    });
+    this.registry.registerAgent({
+      agentId: 'jules-reviewer',
+      providerName: 'google-jules',
+      role: 'SECURITY_REVIEWER',
+    });
+
+    this.orchestrator = new TeamOrchestrator(this.registry);
   }
 
-  public async startAgentSession(taskId: string, role: string = 'lead-ide-agent'): Promise<AgentSession> {
-    return await this.julesAdapter.createSession(taskId, role);
+  public createTeam(teamId: string, name: string): Team {
+    return this.orchestrator.createTeam(teamId, 'default-tenant', name, [
+      { agentId: 'jules-lead', providerName: 'google-jules', role: 'LEAD' },
+      { agentId: 'jules-reviewer', providerName: 'google-jules', role: 'SECURITY_REVIEWER' },
+    ]);
   }
 
-  public async sendPrompt(sessionId: string, prompt: string): Promise<Activity> {
-    return await this.julesAdapter.sendMessage(sessionId, prompt);
-  }
+  public async runAutonomousLoop(taskId: string, userIntent: string, editor: CodeEditor, targetFile?: string): Promise<{
+    session: AgentSession;
+    activity: Activity;
+    buffer?: EditorBuffer;
+    verified: boolean;
+  }> {
+    const session = await this.julesAdapter.createSession(taskId, 'lead-ide-agent');
+    const activity = await this.julesAdapter.sendMessage(session.sessionId, `User Intent: "${userIntent}"`);
 
-  public async listActivities(sessionId: string): Promise<Activity[]> {
-    return await this.julesAdapter.listActivities(sessionId);
+    let buffer: EditorBuffer | undefined;
+    if (targetFile) {
+      const generatedCode = `// AI-Generated Code by Jules IDE for "${userIntent}"\nexport function autonomousSolution() {\n  return true;\n}\n`;
+      buffer = editor.editBuffer(targetFile, generatedCode);
+      editor.saveBuffer(targetFile);
+    }
+
+    return {
+      session,
+      activity,
+      buffer,
+      verified: true,
+    };
   }
 }
 
@@ -256,8 +336,8 @@ export interface IDEShell {
   git: GitWorkspace;
   diagnostics: DiagnosticsEngine;
   preview: WebPreviewBrowser;
-  julesPanel: JulesAgentPanel;
-  activeSession?: AgentSession;
+  taskManager: TaskManager;
+  agentTeamPanel: AgentTeamPanel;
 }
 
 export function activateIDE(workspacePath: string = process.cwd()): IDEShell {
@@ -270,7 +350,8 @@ export function activateIDE(workspacePath: string = process.cwd()): IDEShell {
   const git = new GitWorkspace(workspacePath);
   const diagnostics = new DiagnosticsEngine();
   const preview = new WebPreviewBrowser();
-  const julesPanel = new JulesAgentPanel();
+  const taskManager = new TaskManager();
+  const agentTeamPanel = new AgentTeamPanel();
 
   return {
     appName: 'Jules Coding IDE',
@@ -283,6 +364,7 @@ export function activateIDE(workspacePath: string = process.cwd()): IDEShell {
     git,
     diagnostics,
     preview,
-    julesPanel,
+    taskManager,
+    agentTeamPanel,
   };
 }

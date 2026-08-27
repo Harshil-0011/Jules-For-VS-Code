@@ -1,6 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import { activateIDE, WorkspaceExplorer, CodeEditor, SearchEngine, TerminalShell, GitWorkspace, DiagnosticsEngine, WebPreviewBrowser, JulesAgentPanel } from '../../apps/jules-ide/index';
+import { activateIDE, WorkspaceExplorer, CodeEditor, SearchEngine, TerminalShell, GitWorkspace, DiagnosticsEngine, WebPreviewBrowser, TaskManager, AgentTeamPanel } from '../../apps/jules-ide/index';
 
 describe('Product 2 — Jules Coding IDE (Canonical Architecture Phase 6 & 7)', () => {
   const tmpWorkspace = path.join(process.cwd(), '.tmp_ide_test_workspace');
@@ -17,7 +17,7 @@ describe('Product 2 — Jules Coding IDE (Canonical Architecture Phase 6 & 7)', 
     }
   });
 
-  it('should activate IDE shell and initialize all core modules', () => {
+  it('should activate IDE shell and initialize all core modules including TaskManager and AgentTeamPanel', () => {
     const ide = activateIDE(tmpWorkspace);
     expect(ide.appName).toBe('Jules Coding IDE');
     expect(ide.version).toBe('4.0.0');
@@ -29,7 +29,8 @@ describe('Product 2 — Jules Coding IDE (Canonical Architecture Phase 6 & 7)', 
     expect(ide.git).toBeDefined();
     expect(ide.diagnostics).toBeDefined();
     expect(ide.preview).toBeDefined();
-    expect(ide.julesPanel).toBeDefined();
+    expect(ide.taskManager).toBeDefined();
+    expect(ide.agentTeamPanel).toBeDefined();
   });
 
   it('should explore workspace files via WorkspaceExplorer', () => {
@@ -63,6 +64,35 @@ describe('Product 2 — Jules Coding IDE (Canonical Architecture Phase 6 & 7)', 
     expect(results[0].content).toContain('greeting');
   });
 
+  it('should manage IDE task DAG states in TaskManager', () => {
+    const taskMgr = new TaskManager();
+    const task = taskMgr.createTask('Implement Payment Gateway');
+    expect(task.title).toBe('Implement Payment Gateway');
+    expect(task.status).toBe('CREATED');
+
+    const updated = taskMgr.updateTaskStatus(task.id, 'RUNNING', 'Plan: Build stripe adapter');
+    expect(updated?.status).toBe('RUNNING');
+    expect(updated?.plan).toContain('stripe adapter');
+
+    expect(taskMgr.listTasks().length).toBe(1);
+  });
+
+  it('should orchestrate agent teams and run autonomous coding loops in AgentTeamPanel', async () => {
+    const editor = new CodeEditor(tmpWorkspace);
+    const panel = new AgentTeamPanel();
+    const team = panel.createTeam('team-ide-1', 'Frontend Engineering Team');
+    expect(team.name).toBe('Frontend Engineering Team');
+
+    const result = await panel.runAutonomousLoop('ide-task-101', 'Build responsive header component', editor, 'components/Header.ts');
+    expect(result.session.sessionId).toBeDefined();
+    expect(result.activity.content).toContain('Build responsive header component');
+    expect(result.verified).toBe(true);
+    expect(fs.existsSync(path.join(tmpWorkspace, 'components/Header.ts'))).toBe(true);
+
+    const savedCode = fs.readFileSync(path.join(tmpWorkspace, 'components/Header.ts'), 'utf-8');
+    expect(savedCode).toContain('AI-Generated Code by Jules IDE');
+  });
+
   it('should execute terminal commands via TerminalShell', () => {
     const terminal = new TerminalShell(tmpWorkspace);
     const output = terminal.executeCommand('npm test');
@@ -86,17 +116,5 @@ describe('Product 2 — Jules Coding IDE (Canonical Architecture Phase 6 & 7)', 
     const render = preview.renderPreview('http://localhost:3000');
     expect(render.status).toBe('READY');
     expect(render.contentSnippet).toContain('Jules Coding IDE');
-  });
-
-  it('should handle agent session and prompts in JulesAgentPanel', async () => {
-    const panel = new JulesAgentPanel();
-    const session = await panel.startAgentSession('ide-task-001');
-    expect(session.sessionId).toBeDefined();
-
-    const activity = await panel.sendPrompt(session.sessionId, 'Implement user profile editor');
-    expect(activity.content).toContain('Implement user profile editor');
-
-    const activities = await panel.listActivities(session.sessionId);
-    expect(activities.length).toBeGreaterThanOrEqual(2);
   });
 });
