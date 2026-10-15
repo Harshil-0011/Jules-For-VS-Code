@@ -12,15 +12,90 @@ A production-oriented autonomous software engineering platform putting **Google 
 
 ---
 
-## 📦 Ecosystem Products & Download Links
+## 📦 Ecosystem Products & Downloads
 
-The ecosystem provides **three independent products**. Each product caters to a specific developer workflow with zero cross-product runtime lock-in:
+The ecosystem offers **three independent products**. Select and download the product suited for your workflow:
 
-| Product | Form Factor | Direct Download / Install Link | Docs / App Scope |
+| Product | Form Factor | Direct Download / Install Link | Documentation |
 | :--- | :--- | :--- | :--- |
 | **1. Jules Extension** | VS Code Extension (`.vsix`) | [Download `jules-extension.vsix`](https://github.com/Harshil-0011/Jules-For-VS-Code/releases/latest/download/jules-extension.vsix) \| [VS Marketplace](https://marketplace.visualstudio.com/items?itemName=jules-ecosystem.jules-extension) | [`apps/jules-extension`](./apps/jules-extension) |
 | **2. Jules Coding IDE** | Standalone AI IDE App | [Download Desktop IDE (Linux/macOS/Win)](https://github.com/Harshil-0011/Jules-For-VS-Code/releases/latest) | [`apps/jules-ide`](./apps/jules-ide) |
 | **3. Jules Code CLI** | Terminal Coding Agent | [`npm install -g jules-code-cli`](https://www.npmjs.com/package/jules-code-cli) \| [Download CLI Binary](https://github.com/Harshil-0011/Jules-For-VS-Code/releases/latest/download/jules-cli) | [`apps/jules-cli`](./apps/jules-cli) |
+
+---
+
+## 📸 Application Interface Previews
+
+### 1️⃣ Jules Extension for VS Code (Sidebar & Diff View)
+
+Integrates autonomous Jules agent panels directly into your existing VS Code workspace.
+
+```text
++---------------------------------------------------------------------------------------------------+
+|  VS CODE WORKSPACE  [Jules Autonomous Extension v4.0.0]                                           |
++------------------------+------------------------------------+-------------------------------------+
+| JULES EXTENSION PANEL  | EDITOR: src/auth/service.ts        | JULES DIFF & APPROVAL VIEW          |
+|                        |                                    |                                     |
+| [Active Task]          |  export async function verifyToken | - const isValid = false;            |
+|  Fix auth token exp    |  (token: string) {                 | + const isValid = await verifyExp();|
+|                        | -  return false;                   |                                     |
+| [Activity Stream]      | +  return jwt.verify(token);       | [Status: VERIFICATION_PASSED]       |
+|  - [09:12] Interpret   |  }                                 |                                     |
+|  - [09:13] Inspect Git |                                    | [ Approve Plan ]  [ Take Over ]     |
+|  - [09:14] Plan Ready  |------------------------------------| [ Emergency Stop 🛑 ]               |
+|                        | TERMINAL: npm test                 |                                     |
+| [Chat Prompt]          |  PASS  tests/unit/auth.test.ts     |                                     |
+| > Fix token exp bug    |  Test Suites: 13 passed, 13 total  |                                     |
++------------------------+------------------------------------+-------------------------------------+
+```
+
+### 2️⃣ Jules Coding IDE (Standalone AI-Native Desktop App)
+
+A ground-up standalone AI IDE with integrated file tree, multi-buffer editor, terminal, git workspace, diagnostics, web preview browser, and multi-agent team orchestrator.
+
+```text
++---------------------------------------------------------------------------------------------------+
+| JULES CODING IDE v4.0.0 — [Project: Jules-Ecosystem | Branch: main]                               |
++--------------+----------------------------------+-----------------------------+-------------------+
+| FILE TREE    | CODE EDITOR: server/gateway.ts   | DIAGNOSTICS & WEB PREVIEW   | AGENT TEAM PANEL  |
+|              |                                  |                             |                   |
+| > apps/      |  const app = express();          | [Diagnostics View]          | [Active Agents]   |
+|   > cli/     |  app.use(express.json());        |  ✓ 0 Errors                 |  - Jules Lead     |
+|   > ide/     |  app.post("/v1/task", async req) |  ✓ 0 Warnings               |  - Sec Reviewer   |
+|   > ext/     |  const res = await dispatch();   |                             |                   |
+| > server/    |                                  | [Web Preview Browser]       | [Team Workflow]   |
+|   index.ts   |----------------------------------|  http://localhost:3000      |  1. Interpret     |
+| > tests/     | TERMINAL: node dist/server.js    |  [ Jules Gateway Running ]  |  2. Plan Approved |
+|   auth.ts    |  Server listening on port 3000   |                             |  3. Verified      |
++--------------+----------------------------------+-----------------------------+-------------------+
+```
+
+### 3️⃣ Jules Code CLI (Terminal-First Autonomous Shell)
+
+Terminal-first autonomous coding shell supporting slash commands, policy checks, interactive REPLs, and headless CI runs.
+
+```text
++---------------------------------------------------------------------------------------------------+
+| JULES CODE CLI TERMINAL REPL                                                                      |
++---------------------------------------------------------------------------------------------------+
+|  =====================================================                                            |
+|    JULES CODE CLI — Interactive Autonomous Shell                                                  |
+|    Powered by Google Jules & Gemini Pro                                                           |
+|  =====================================================                                            |
+|  Workspace: /app | Branch: main | Permission Mode: AUTO                                           |
+|                                                                                                   |
+|  jules (auto)> fix failing test in auth module                                                    |
+|  [INTERPRET] Processing task: "fix failing test in auth module"                                   |
+|  [INSPECT] Repository: app | Branch: main | PM: npm                                                   |
+|  [PLAN] Jules Plan: 1. Connect source -> 2. Generate changes -> 3. Run verification               |
+|  [EXECUTE] Executing task via Jules Cloud VM Session                                              |
+|  [OBSERVE] Edits applied successfully to repository workspace                                    |
+|  [VERIFY] Executing build and test verification suite                                             |
+|  [COMPLETE] Task finished with status PASSED                                                      |
+|                                                                                                   |
+|  jules (auto)> _                                                                                  |
++---------------------------------------------------------------------------------------------------+
+```
 
 ---
 
