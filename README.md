@@ -12,128 +12,134 @@ A production-oriented autonomous software engineering platform putting **Google 
 
 ---
 
-## 📦 Downloads & Installation
+## 📦 Ecosystem Products & Download Links
 
-The ecosystem offers **three independent products**. Select and download the product suited for your workflow:
+The ecosystem provides **three independent products**. Each product caters to a specific developer workflow with zero cross-product runtime lock-in:
 
-| Product | Form Factor | Download / Install Link | Documentation |
+| Product | Form Factor | Direct Download / Install Link | Docs / App Scope |
 | :--- | :--- | :--- | :--- |
-| **1. Jules Extension** | VS Code Extension (`.vsix`) | [Download VSIX Package](https://github.com/Harshil-0011/Jules-For-VS-Code/releases/latest/download/jules-extension.vsix) \| [VS Marketplace](https://marketplace.visualstudio.com/items?itemName=jules-ecosystem.jules-extension) | [`apps/jules-extension`](./apps/jules-extension) |
+| **1. Jules Extension** | VS Code Extension (`.vsix`) | [Download `jules-extension.vsix`](https://github.com/Harshil-0011/Jules-For-VS-Code/releases/latest/download/jules-extension.vsix) \| [VS Marketplace](https://marketplace.visualstudio.com/items?itemName=jules-ecosystem.jules-extension) | [`apps/jules-extension`](./apps/jules-extension) |
 | **2. Jules Coding IDE** | Standalone AI IDE App | [Download Desktop IDE (Linux/macOS/Win)](https://github.com/Harshil-0011/Jules-For-VS-Code/releases/latest) | [`apps/jules-ide`](./apps/jules-ide) |
 | **3. Jules Code CLI** | Terminal Coding Agent | [`npm install -g jules-code-cli`](https://www.npmjs.com/package/jules-code-cli) \| [Download CLI Binary](https://github.com/Harshil-0011/Jules-For-VS-Code/releases/latest/download/jules-cli) | [`apps/jules-cli`](./apps/jules-cli) |
 
 ---
 
-### 1️⃣ Download: Jules Extension for VS Code
-Bring Jules into your existing VS Code environment.
+## 🛠️ Prerequisites & Requirements
 
-* **Direct VSIX Download**: [jules-extension.vsix](https://github.com/Harshil-0011/Jules-For-VS-Code/releases/latest/download/jules-extension.vsix)
-* **VS Code Marketplace**: [Install from Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=jules-ecosystem.jules-extension)
-* **Quick Install Command**:
+To run or compile the Jules Ecosystem, satisfy the following runtime requirements based on your chosen product:
+
+### Core Platform Requirements
+- **Node.js**: `>= 20.0.0` (LTS recommended)
+- **Package Manager**: `npm >= 10.0.0` or `yarn` / `pnpm` / `bun`
+- **Native C++ Build Tools** (Required for SQLite `better-sqlite3` compilation):
+  - **Linux**: `gcc`, `g++`, `make`, `python3` (`sudo apt install build-essential python3`)
+  - **macOS**: Xcode Command Line Tools (`xcode-select --install`)
+  - **Windows**: Windows Build Tools or Visual Studio C++ Workload (`npm install --global windows-build-tools`)
+
+### Product-Specific Requirements
+1. **Jules Extension**:
+   - VS Code Engine: `^1.85.0` or later
+   - Permissions: Workspace read/write access
+2. **Jules Coding IDE**:
+   - Standalone Desktop Runtime: Node.js 20+ / Electron shell support
+   - Supported OS: macOS (11.0+), Linux (Ubuntu 20.04+, Debian 11+), Windows (10/11 x64)
+3. **Jules Code CLI**:
+   - Terminal/Shell: `bash`, `zsh`, `fish`, or PowerShell
+   - Git: `git >= 2.30.0` installed and in PATH
+
+---
+
+## ⚙️ Detailed Installation & Setup
+
+### 1️⃣ Installing Jules Extension for VS Code
+
+Integrates autonomous agent sessions directly into your VS Code editor.
+
+* **Option A: Direct VSIX Install**
+  1. Download [jules-extension.vsix](https://github.com/Harshil-0011/Jules-For-VS-Code/releases/latest/download/jules-extension.vsix).
+  2. Install via command line:
+     ```
+     code --install-extension jules-extension.vsix
+     ```
+  3. Or in VS Code: Press `Ctrl+Shift+P` (or `Cmd+Shift+P`), select **Extensions: Install from VSIX...**, and choose the downloaded file.
+
+* **Option B: Visual Studio Marketplace**
+  Search for `Jules Extension` in the VS Code Extensions tab (`Ctrl+Shift+X`) and click **Install**.
+
+### 2️⃣ Installing Jules Coding IDE
+
+A full standalone AI-native IDE environment with integrated editor, file tree, terminal, git view, diagnostics, web preview, and team panel.
+
+* **macOS**: Download [Jules-IDE-macOS.dmg](https://github.com/Harshil-0011/Jules-For-VS-Code/releases/latest/download/Jules-IDE-macOS.dmg), open the disk image, and drag **Jules Coding IDE** to your `Applications` folder.
+* **Linux**: Download [Jules-IDE-Linux.AppImage](https://github.com/Harshil-0011/Jules-For-VS-Code/releases/latest/download/Jules-IDE-Linux.AppImage), mark executable, and launch:
   ```
-  code --install-extension jules-extension.vsix
+  chmod +x Jules-IDE-Linux.AppImage
+  ./Jules-IDE-Linux.AppImage
   ```
+* **Windows**: Download and run [Jules-IDE-Setup.exe](https://github.com/Harshil-0011/Jules-For-VS-Code/releases/latest/download/Jules-IDE-Setup.exe) to install.
 
-### 2️⃣ Download: Jules Coding IDE
-A standalone AI-native coding environment built ground-up around Jules autonomous agents.
+### 3️⃣ Installing Jules Code CLI
 
-* **macOS App (.dmg)**: [Download for macOS](https://github.com/Harshil-0011/Jules-For-VS-Code/releases/latest/download/Jules-IDE-macOS.dmg)
-* **Linux AppImage (.AppImage)**: [Download for Linux](https://github.com/Harshil-0011/Jules-For-VS-Code/releases/latest/download/Jules-IDE-Linux.AppImage)
-* **Windows Installer (.exe)**: [Download for Windows](https://github.com/Harshil-0011/Jules-For-VS-Code/releases/latest/download/Jules-IDE-Setup.exe)
+A terminal-first agent capable of running tasks, PR generation, interactive REPLs, and CI pipelines.
 
-### 3️⃣ Download: Jules Code CLI
-A terminal-first autonomous coding agent (similar to Claude Code / Codex CLI).
-
-* **NPM Installation**:
+* **Option A: NPM Global Package**
   ```
   npm install -g jules-code-cli
+  jules --help
   ```
-* **Standalone Terminal Binary**:
+
+* **Option B: Standalone Terminal Binary**
   ```
   curl -fsSL https://raw.githubusercontent.com/Harshil-0011/Jules-For-VS-Code/main/install-cli | env RUN_INSTALLER=1
   ```
 
 ---
 
-## 🏗️ Architecture Principle
+## ⚡ Developer Quickstart & Building from Source
 
-> **Jules is the primary intelligence. The products are independent clients. The deterministic infrastructure controls execution.**
-
-When design choices conflict, decisions strictly follow this priority hierarchy:
-
-```text
-CORRECTNESS > SAFETY > VERIFIABILITY > RELIABILITY > RECOVERABILITY > PERFORMANCE > COST > SPEED
-```
-
-### Ecosystem System Topology
-
-```text
-                         JULES ECOSYSTEM
-                               │
-          ┌────────────────────┼────────────────────┐
-          │                    │                    │
-          ▼                    ▼                    ▼
- ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐
- │ JULES EXTENSION │  │   JULES IDE     │  │ JULES CODE CLI  │
- │                 │  │                 │  │                 │
- │ Existing IDE    │  │ Standalone      │  │ Terminal-first  │
- │ integration     │  │ AI coding IDE   │  │ coding agent    │
- └────────┬────────┘  └────────┬────────┘  └────────┬────────┘
-          │                    │                    │
-          └────────────────────┼────────────────────┘
-                               │
-                    SHARED PROTOCOLS/LIBRARIES
-                               │
-          ┌────────────────────┼────────────────────┐
-          │                    │                    │
-          ▼                    ▼                    ▼
-      Jules SDK          Agent Protocol       Core Tooling
-      Git Engine         Task Protocol        Verification
-      Security           Context              Sandbox
-      GitHub             Artifacts            Policies
-                               │
-                               ▼
-                         GOOGLE JULES
-```
-
----
-
-## ⚡ Quick Start
-
-### Building from Source
-
-To build all three products from source:
+To build all products and the backend platform from source:
 
 ```
-# Clone the repository
+# 1. Clone the repository
 git clone https://github.com/Harshil-0011/Jules-For-VS-Code.git
 cd Jules-For-VS-Code
 
-# Install dependencies
+# 2. Install dependencies & compile native modules
 npm install
 
-# Build TypeScript outputs
+# 3. Build all TypeScript projects
 npm run build
 
-# Run unit & integration test suites
+# 4. Run full unit and integration test suite
 npm test
 ```
 
-### Launching the Products locally
+### Running Products locally from Source
 
-* **Launch Jules Code CLI**:
+* **Run Jules Code CLI**:
   ```
-  npm run build
-  node dist/apps/jules-cli/index.js
+  node dist/apps/jules-cli/index.js "fix tests in auth module"
+  node dist/apps/jules-cli/index.js interactive
   ```
-* **Start Jules Gateway Server**:
+* **Run Jules Coding IDE Shell**:
   ```
-  node dist/server/index.js
+  node -e "const ide = require(./dist/apps/jules-ide/index.js); ide.activateIDE();"
+  ```
+* **Run Jules Platform Gateway Server**:
+  ```
+  npm start
   ```
 
 ---
 
-## 🔑 Key Features
+## 🔑 Architecture Principles & Features
+
+> **Jules is the primary intelligence. The products are independent clients. The deterministic infrastructure controls execution.**
+
+Strict Priority Hierarchy:
+```text
+CORRECTNESS > SAFETY > VERIFIABILITY > RELIABILITY > RECOVERABILITY > PERFORMANCE > COST > SPEED
+```
 
 - **Three Independent Products**: Extension, Coding IDE, and Code CLI run independently without cross-product dependencies.
 - **Terminal Coding Agent**: `jules` CLI supports interactive, task execution, headless, CI, review, and verification modes.
