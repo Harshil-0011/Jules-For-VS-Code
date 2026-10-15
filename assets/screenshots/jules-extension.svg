@@ -1,0 +1,75 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 550" width="100%" height="100%">
+  <rect width="1000" height="550" fill="#1e1e1e" rx="10"/>
+  <!-- Title bar -->
+  <rect width="1000" height="35" fill="#323233" rx="10"/>
+  <circle cx="20" cy="18" r="6" fill="#ff5f56"/>
+  <circle cx="40" cy="18" r="6" fill="#ffbd2e"/>
+  <circle cx="60" cy="18" r="6" fill="#27c93f"/>
+  <text x="500" y="22" fill="#cccccc" font-family="monospace" font-size="13" text-anchor="middle">VS Code — Jules Extension (Workspace: Jules-Ecosystem)</text>
+
+  <!-- Activity bar -->
+  <rect x="0" y="35" width="50" height="515" fill="#333333"/>
+  <rect x="10" y="50" width="30" height="30" fill="#007acc" rx="5"/>
+  <text x="25" y="70" fill="#ffffff" font-family="sans-serif" font-weight="bold" font-size="16" text-anchor="middle">J</text>
+
+  <!-- Jules Sidebar Panel -->
+  <rect x="50" y="35" width="250" height="515" fill="#252526"/>
+  <rect x="50" y="35" width="250" height="35" fill="#2d2d2d"/>
+  <text x="65" y="58" fill="#ffffff" font-family="sans-serif" font-weight="bold" font-size="13">JULES AUTONOMOUS AGENT</text>
+
+  <!-- Active Task Box -->
+  <rect x="60" y="80" width="230" height="60" fill="#1e1e1e" rx="5" stroke="#007acc" stroke-width="1"/>
+  <text x="70" y="100" fill="#007acc" font-family="sans-serif" font-weight="bold" font-size="11">ACTIVE TASK</text>
+  <text x="70" y="120" fill="#dddddd" font-family="sans-serif" font-size="12">Fix auth token expiration check</text>
+
+  <!-- Activity Stream -->
+  <text x="60" y="165" fill="#aaaaaa" font-family="sans-serif" font-weight="bold" font-size="11">ACTIVITY STREAM</text>
+  <text x="60" y="190" fill="#4ec9b0" font-family="monospace" font-size="11">✓ [09:12] INTERPRET Task</text>
+  <text x="60" y="210" fill="#4ec9b0" font-family="monospace" font-size="11">✓ [09:13] INSPECT Git main</text>
+  <text x="60" y="230" fill="#4ec9b0" font-family="monospace" font-size="11">✓ [09:14] PLAN Generated</text>
+  <text x="60" y="250" fill="#ce9178" font-family="monospace" font-size="11">➜ [09:15] VERIFY Testing...</text>
+
+  <!-- Chat Input -->
+  <rect x="60" y="470" width="230" height="60" fill="#1e1e1e" rx="5" stroke="#3c3c3c"/>
+  <text x="70" y="495" fill="#888888" font-family="sans-serif" font-size="12">Ask Jules a coding prompt...</text>
+  <rect x="230" y="500" width="50" height="22" fill="#007acc" rx="3"/>
+  <text x="255" y="515" fill="#ffffff" font-family="sans-serif" font-size="11" text-anchor="middle">Send</text>
+
+  <!-- Editor Area -->
+  <rect x="300" y="35" width="420" height="515" fill="#1e1e1e"/>
+  <!-- Editor Tab -->
+  <rect x="300" y="35" width="160" height="30" fill="#1e1e1e"/>
+  <text x="315" y="55" fill="#ffffff" font-family="monospace" font-size="12">src/auth/service.ts</text>
+  <!-- Code text -->
+  <text x="320" y="90" fill="#569cd6" font-family="monospace" font-size="12">export async function <tspan fill="#dcdcaa">verifyToken</tspan>(token: string) {</text>
+  <text x="320" y="115" fill="#6a9955" font-family="monospace" font-size="12">  // Verified by Google Jules Agent</text>
+  <text x="320" y="140" fill="#569cd6" font-family="monospace" font-size="12">  const <tspan fill="#9cdcfe">payload</tspan> = <tspan fill="#c586c0">await</tspan> jwt.<tspan fill="#dcdcaa">verify</tspan>(token);</text>
+  <text x="320" y="165" fill="#c586c0" font-family="monospace" font-size="12">  return <tspan fill="#9cdcfe">payload</tspan> !== null;</text>
+  <text x="320" y="190" fill="#dcdcaa" font-family="monospace" font-size="12">}</text>
+
+  <!-- Integrated Terminal -->
+  <rect x="300" y="380" width="420" height="170" fill="#181818"/>
+  <text x="315" y="400" fill="#aaaaaa" font-family="sans-serif" font-size="11" font-weight="bold">TERMINAL: npm test</text>
+  <text x="315" y="425" fill="#4ec9b0" font-family="monospace" font-size="11">PASS tests/unit/auth.test.ts</text>
+  <text x="315" y="445" fill="#4ec9b0" font-family="monospace" font-size="11">Test Suites: 13 passed, 13 total</text>
+  <text x="315" y="465" fill="#4ec9b0" font-family="monospace" font-size="11">Tests:       61 passed, 61 total</text>
+
+  <!-- Right Diff & Approval View -->
+  <rect x="720" y="35" width="280" height="515" fill="#252526"/>
+  <rect x="720" y="35" width="280" height="35" fill="#2d2d2d"/>
+  <text x="735" y="58" fill="#ffffff" font-family="sans-serif" font-weight="bold" font-size="13">JULES DIFF & APPROVAL</text>
+
+  <!-- Diff Preview -->
+  <rect x="730" y="80" width="260" height="150" fill="#1e1e1e" rx="5"/>
+  <rect x="730" y="100" width="260" height="20" fill="#5a1d1d"/>
+  <text x="740" y="115" fill="#f88070" font-family="monospace" font-size="11">- return false;</text>
+  <rect x="730" y="125" width="260" height="20" fill="#134f2c"/>
+  <text x="740" y="140" fill="#73c991" font-family="monospace" font-size="11">+ return jwt.verify(token);</text>
+
+  <!-- Action Buttons -->
+  <rect x="730" y="250" width="260" height="35" fill="#238636" rx="5"/>
+  <text x="860" y="272" fill="#ffffff" font-family="sans-serif" font-weight="bold" font-size="12" text-anchor="middle">✓ Approve Plan &amp; Merge</text>
+
+  <rect x="730" y="300" width="260" height="35" fill="#da3633" rx="5"/>
+  <text x="860" y="322" fill="#ffffff" font-family="sans-serif" font-weight="bold" font-size="12" text-anchor="middle">🛑 Emergency Stop</text>
+</svg>
