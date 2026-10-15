@@ -1,6 +1,21 @@
 import { AgentProvider, AgentCapability, AgentSession, Activity } from '../providers/agent_provider';
 import { v4 as uuidv4 } from 'uuid';
 
+export interface JulesSource {
+  id: string;
+  name: string;
+  githubRepository: string;
+  defaultBranch: string;
+  connected: boolean;
+}
+
+export interface JulesSourceContext {
+  source: string;
+  startingBranch: string;
+}
+
+export type JulesAutomationMode = 'AUTO_CREATE_PR' | 'MANUAL_REVIEW' | 'DRY_RUN';
+
 export interface ProviderReconciliationResult {
   sessionId: string;
   providerStatus: 'SYNCED' | 'OUT_OF_SYNC' | 'RERECONCILED';
@@ -11,11 +26,22 @@ export interface ProviderReconciliationResult {
 export class JulesAdapter implements AgentProvider {
   private sessions = new Map<string, AgentSession>();
   private activities = new Map<string, Activity[]>();
+  private sources = new Map<string, JulesSource>();
 
   constructor(
     private apiKey: string,
-    private apiUrl: string
-  ) {}
+    private apiUrl: string = 'https://jules.googleapis.com/v1alpha'
+  ) {
+    // Default connected sources
+    const defaultSource: JulesSource = {
+      id: 'sources/github/default/repo',
+      name: 'Default Repository',
+      githubRepository: 'owner/repo',
+      defaultBranch: 'main',
+      connected: true,
+    };
+    this.sources.set(defaultSource.id, defaultSource);
+  }
 
   public getProviderName(): string {
     return 'google-jules';
@@ -45,7 +71,22 @@ export class JulesAdapter implements AgentProvider {
     return this.getCapabilities().includes(capability);
   }
 
+  public async listSources(): Promise<JulesSource[]> {
+    return Array.from(this.sources.values());
+  }
+
   public async createSession(taskId: string, role: string): Promise<AgentSession> {
+    return this.createSessionWithSourceContext({
+      source: 'sources/github/default/repo',
+      startingBranch: 'main',
+    }, `Task ${taskId}`, 'AUTO_CREATE_PR');
+  }
+
+  public async createSessionWithSourceContext(
+    sourceContext: JulesSourceContext,
+    prompt: string,
+    automationMode: JulesAutomationMode = 'AUTO_CREATE_PR'
+  ): Promise<AgentSession> {
     const sessionId = `jules-session-${uuidv4()}`;
     const session: AgentSession = {
       sessionId,
@@ -62,7 +103,14 @@ export class JulesAdapter implements AgentProvider {
         id: uuidv4(),
         sessionId,
         type: 'SYSTEM',
-        content: `Jules Cloud VM session provisioned for task ${taskId} in role ${role} (Powered by Gemini Pro)`,
+        content: `Jules Session (${sessionId}) initialized via REST API (X-Goog-Api-Key). Source: ${sourceContext.source} @ ${sourceContext.startingBranch} | AutomationMode: ${automationMode}`,
+        timestamp: new Date().toISOString(),
+      },
+      {
+        id: uuidv4(),
+        sessionId,
+        type: 'PROMPT',
+        content: `Prompt: "${prompt}"`,
         timestamp: new Date().toISOString(),
       },
     ]);

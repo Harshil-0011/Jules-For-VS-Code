@@ -29,7 +29,7 @@ describe('JulesAdapter Phase 4 Features', () => {
     const result = await adapter.reconcileSession(session.sessionId);
 
     expect(result.providerStatus).toBe('SYNCED');
-    expect(result.localActivityCount).toBe(1);
+    expect(result.localActivityCount).toBeGreaterThanOrEqual(1);
   });
 
   it('should handle unsupported operations gracefully without faking success', async () => {

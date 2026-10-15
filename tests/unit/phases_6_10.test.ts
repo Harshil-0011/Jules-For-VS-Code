@@ -2,7 +2,7 @@ import { DatabaseService } from '../../server/persistence/database';
 import { ContextEngine } from '../../server/context/context_engine';
 import { AgentRegistry, TeamOrchestrator } from '../../server/teams/team';
 import { JulesAdapter } from '../../server/jules/jules_adapter';
-import { activate } from '../../vscode/extension/extension';
+import { activate } from '../../apps/jules-extension/extension/extension';
 
 describe('Phase 6-10 Verification, Memory, Multi-Agent & VS Code', () => {
   let dbService: DatabaseService;

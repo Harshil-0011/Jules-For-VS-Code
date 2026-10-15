@@ -1,6 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import { activate, deactivate, WorkspaceAdapter, GitAdapter, EventClient } from '../../vscode/extension/extension';
+import { activate, deactivate, WorkspaceAdapter, GitAdapter, EventClient } from '../../apps/jules-extension/extension/extension';
 
 describe('VS Code Extension - Canonical Architecture Phase 5', () => {
   const tmpWorkspace = path.join(process.cwd(), '.tmp_test_workspace');
