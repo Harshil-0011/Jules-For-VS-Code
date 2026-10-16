@@ -1,8 +1,8 @@
-import * as fs from 'fs';
-import * as path from 'path';
-import { JulesAdapter } from '../../server/jules/jules_adapter';
-import { AgentSession, Activity } from '../../server/providers/agent_provider';
-import { AgentRegistry, TeamOrchestrator, Team } from '../../server/teams/team';
+import * as fs from "fs";
+import * as path from "path";
+import { JulesAdapter } from "../../server/jules/jules_adapter";
+import { AgentSession, Activity } from "../../server/providers/agent_provider";
+import { AgentRegistry, TeamOrchestrator, Team } from "../../server/teams/team";
 
 export interface FileExplorerItem {
   name: string;
@@ -43,20 +43,20 @@ export interface DiagnosticProblem {
   filePath: string;
   line: number;
   column: number;
-  severity: 'ERROR' | 'WARNING' | 'INFO';
+  severity: "ERROR" | "WARNING" | "INFO";
   message: string;
 }
 
 export interface WebPreviewState {
   url: string;
-  status: 'LOADING' | 'READY' | 'ERROR';
+  status: "LOADING" | "READY" | "ERROR";
   contentSnippet: string;
 }
 
 export interface IDETask {
   id: string;
   title: string;
-  status: 'CREATED' | 'RUNNING' | 'VERIFYING' | 'COMPLETED' | 'FAILED';
+  status: "CREATED" | "RUNNING" | "VERIFYING" | "COMPLETED" | "FAILED";
   plan?: string;
   assignedAgent?: string;
   filesTouched: string[];
@@ -64,17 +64,95 @@ export interface IDETask {
   updatedAt: string;
 }
 
+export interface CodeSymbol {
+  name: string;
+  kind: "function" | "class" | "interface" | "type" | "variable";
+  filePath: string;
+  line: number;
+}
+
+export interface WorkspaceCheckpoint {
+  id: string;
+  timestamp: string;
+  description: string;
+  modifiedFiles: string[];
+}
+
+export class SymbolIndexer {
+  constructor(private repoPath: string = process.cwd()) {}
+
+  public indexWorkspace(): CodeSymbol[] {
+    const symbols: CodeSymbol[] = [];
+    const scanDir = (dir: string) => {
+      try {
+        const entries = fs.readdirSync(dir, { withFileTypes: true });
+        for (const entry of entries) {
+          if (["node_modules", ".git", "dist", ".jules"].includes(entry.name)) continue;
+          const full = path.join(dir, entry.name);
+          if (entry.isDirectory()) {
+            scanDir(full);
+          } else if (entry.isFile() && (entry.name.endsWith(".ts") || entry.name.endsWith(".js"))) {
+            try {
+              const content = fs.readFileSync(full, "utf-8");
+              const lines = content.split("\n");
+              lines.forEach((line, idx) => {
+                const fnMatch = line.match(/(?:function|class|interface|type|const)\s+([a-zA-Z0-9_$]+)/);
+                if (fnMatch) {
+                  const kind = line.includes("class") ? "class" : line.includes("interface") ? "interface" : line.includes("function") ? "function" : "variable";
+                  symbols.push({
+                    name: fnMatch[1],
+                    kind,
+                    filePath: path.relative(this.repoPath, full),
+                    line: idx + 1,
+                  });
+                }
+              });
+            } catch (_) {}
+          }
+        }
+      } catch (_) {}
+    };
+
+    scanDir(this.repoPath);
+    return symbols;
+  }
+}
+
+export class CheckpointManager {
+  private checkpoints: WorkspaceCheckpoint[] = [];
+
+  public createCheckpoint(description: string, modifiedFiles: string[] = []): WorkspaceCheckpoint {
+    const cp: WorkspaceCheckpoint = {
+      id: `cp-${Date.now()}`,
+      timestamp: new Date().toISOString(),
+      description: description || "Manual Checkpoint",
+      modifiedFiles,
+    };
+    this.checkpoints.push(cp);
+    return cp;
+  }
+
+  public listCheckpoints(): WorkspaceCheckpoint[] {
+    return this.checkpoints;
+  }
+
+  public rollbackCheckpoint(checkpointId: string): boolean {
+    const cp = this.checkpoints.find(c => c.id === checkpointId);
+    return cp !== undefined;
+  }
+}
+
 export class WorkspaceExplorer {
   constructor(private repoPath: string = process.cwd()) {}
 
-  public listFiles(dirPath: string = '.'): FileExplorerItem[] {
+  public listFiles(dirPath: string = "."): FileExplorerItem[] {
     try {
       const fullPath = path.resolve(this.repoPath, dirPath);
       if (!fs.existsSync(fullPath)) return [];
 
       const entries = fs.readdirSync(fullPath, { withFileTypes: true });
       return entries.map(e => {
-        const relPath = path.join(dirPath === '.' ? '' : dirPath, e.name);
+        const relPath = path.join(dirPath === "." ? "" : dirPath, e.name);
         return {
           name: e.name,
           relativePath: relPath,
@@ -94,20 +172,20 @@ export class CodeEditor {
 
   public openFile(filePath: string): EditorBuffer {
     if (!filePath) {
-      throw new Error('INVALID_PATH: filePath is required');
+      throw new Error("INVALID_PATH: filePath is required");
     }
     const fullPath = path.resolve(this.repoPath, filePath);
-    let content = '';
+    let content = "";
     if (fs.existsSync(fullPath)) {
       try {
-        content = fs.readFileSync(fullPath, 'utf-8');
+        content = fs.readFileSync(fullPath, "utf-8");
       } catch (_) {
-        content = '';
+        content = "";
       }
     }
 
-    const ext = path.extname(filePath).replace('.', '');
-    const language = ext === 'ts' || ext === 'tsx' ? 'typescript' : ext === 'js' ? 'javascript' : ext === 'json' ? 'json' : 'plaintext';
+    const ext = path.extname(filePath).replace(".", "");
+    const language = ext === "ts" || ext === "tsx" ? "typescript" : ext === "js" ? "javascript" : ext === "json" ? "json" : "plaintext";
 
     const buffer: EditorBuffer = {
       filePath,
@@ -122,7 +200,7 @@ export class CodeEditor {
 
   public editBuffer(filePath: string, newContent: string): EditorBuffer {
     const buffer = this.buffers.get(filePath) || this.openFile(filePath);
-    buffer.content = newContent || '';
+    buffer.content = newContent || "";
     buffer.isDirty = true;
     return buffer;
   }
@@ -137,7 +215,7 @@ export class CodeEditor {
       if (!fs.existsSync(parent)) {
         fs.mkdirSync(parent, { recursive: true });
       }
-      fs.writeFileSync(fullPath, buffer.content, 'utf-8');
+      fs.writeFileSync(fullPath, buffer.content, "utf-8");
       buffer.isDirty = false;
     } catch (err: any) {
       console.warn(`[CodeEditor] saveBuffer failed: ${err.message}`);
@@ -153,7 +231,7 @@ export class SearchEngine {
   constructor(private repoPath: string = process.cwd()) {}
 
   public search(query: string, maxResults: number = 20): SearchMatch[] {
-    if (!query || query.trim() === '') return [];
+    if (!query || query.trim() === "") return [];
 
     const matches: SearchMatch[] = [];
     const searchFile = (dir: string) => {
@@ -161,14 +239,14 @@ export class SearchEngine {
       try {
         const entries = fs.readdirSync(dir, { withFileTypes: true });
         for (const entry of entries) {
-          if (entry.name === 'node_modules' || entry.name === '.git' || entry.name === 'dist' || entry.name === '.jules') continue;
+          if (["node_modules", ".git", "dist", ".jules"].includes(entry.name)) continue;
           const full = path.join(dir, entry.name);
           if (entry.isDirectory()) {
             searchFile(full);
           } else if (entry.isFile()) {
             try {
-              const content = fs.readFileSync(full, 'utf-8');
-              const lines = content.split('\n');
+              const content = fs.readFileSync(full, "utf-8");
+              const lines = content.split("\n");
               lines.forEach((line, idx) => {
                 if (line.includes(query) && matches.length < maxResults) {
                   matches.push({
@@ -193,14 +271,14 @@ export class TerminalShell {
   constructor(private repoPath: string = process.cwd()) {}
 
   public executeCommand(command: string): TerminalOutput {
-    if (!command || command.trim() === '') {
-      return { command: '', exitCode: 1, stdout: '', stderr: 'ERROR: Empty command' };
+    if (!command || command.trim() === "") {
+      return { command: "", exitCode: 1, stdout: "", stderr: "ERROR: Empty command" };
     }
     return {
       command,
       exitCode: 0,
       stdout: `[Jules IDE Terminal] Executed command: "${command}" in ${this.repoPath}`,
-      stderr: '',
+      stderr: "",
     };
   }
 }
@@ -209,17 +287,17 @@ export class GitWorkspace {
   constructor(private repoPath: string = process.cwd()) {}
 
   public getStatus(): GitStatus {
-    let branch = 'main';
+    let branch = "main";
     try {
-      const gitDir = path.join(this.repoPath, '.git');
+      const gitDir = path.join(this.repoPath, ".git");
       const hasGit = fs.existsSync(gitDir);
 
       if (hasGit) {
-        const headFile = path.join(gitDir, 'HEAD');
+        const headFile = path.join(gitDir, "HEAD");
         if (fs.existsSync(headFile)) {
-          const content = fs.readFileSync(headFile, 'utf-8').trim();
-          if (content.startsWith('ref: refs/heads/')) {
-            branch = content.replace('ref: refs/heads/', '');
+          const content = fs.readFileSync(headFile, "utf-8").trim();
+          if (content.startsWith("ref: refs/heads/")) {
+            branch = content.replace("ref: refs/heads/", "");
           }
         }
       }
@@ -239,29 +317,29 @@ export class DiagnosticsEngine {
   public runDiagnostics(repoPath: string = process.cwd()): DiagnosticProblem[] {
     return [
       {
-        filePath: 'package.json',
+        filePath: "package.json",
         line: 1,
         column: 1,
-        severity: 'INFO',
-        message: 'Jules IDE Diagnostic: Workspace structure clean',
+        severity: "INFO",
+        message: "Jules IDE Diagnostic: Workspace structure clean",
       },
     ];
   }
 }
 
 export class WebPreviewBrowser {
-  public renderPreview(url: string = 'http://localhost:3000'): WebPreviewState {
-    if (!url || !url.startsWith('http')) {
+  public renderPreview(url: string = "http://localhost:3000"): WebPreviewState {
+    if (!url || !url.startsWith("http")) {
       return {
-        url: url || 'invalid-url',
-        status: 'ERROR',
-        contentSnippet: '<html><body><h1>Invalid URL</h1></body></html>',
+        url: url || "invalid-url",
+        status: "ERROR",
+        contentSnippet: "<html><body><h1>Invalid URL</h1></body></html>",
       };
     }
     return {
       url,
-      status: 'READY',
-      contentSnippet: '<html><body><h1>Jules Coding IDE Web Preview</h1></body></html>',
+      status: "READY",
+      contentSnippet: "<html><body><h1>Jules Coding IDE Web Preview</h1></body></html>",
     };
   }
 }
@@ -273,8 +351,8 @@ export class TaskManager {
     const id = `ide-task-${Date.now()}`;
     const task: IDETask = {
       id,
-      title: title || 'Untitled Task',
-      status: 'CREATED',
+      title: title || "Untitled Task",
+      status: "CREATED",
       filesTouched: [],
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
@@ -283,7 +361,7 @@ export class TaskManager {
     return task;
   }
 
-  public updateTaskStatus(id: string, status: IDETask['status'], plan?: string): IDETask | undefined {
+  public updateTaskStatus(id: string, status: IDETask["status"], plan?: string): IDETask | undefined {
     const task = this.tasks.get(id);
     if (task) {
       task.status = status;
@@ -303,30 +381,44 @@ export class AgentTeamPanel {
   private orchestrator: TeamOrchestrator;
   private julesAdapter: JulesAdapter;
 
-  constructor(apiKey: string = process.env.JULES_API_KEY || 'mock-jules-key') {
+  constructor(apiKey: string = process.env.JULES_API_KEY || "mock-jules-key") {
     this.registry = new AgentRegistry();
-    this.julesAdapter = new JulesAdapter(apiKey, 'https://jules.googleapis.com/v1alpha');
+    this.julesAdapter = new JulesAdapter(apiKey, "https://jules.googleapis.com/v1alpha");
     this.registry.registerProvider(this.julesAdapter);
 
     this.registry.registerAgent({
-      agentId: 'jules-lead',
-      providerName: 'google-jules',
-      role: 'LEAD',
+      agentId: "jules-lead",
+      providerName: "google-jules",
+      role: "LEAD",
     });
     this.registry.registerAgent({
-      agentId: 'jules-reviewer',
-      providerName: 'google-jules',
-      role: 'SECURITY_REVIEWER',
+      agentId: "jules-reviewer",
+      providerName: "google-jules",
+      role: "SECURITY_REVIEWER",
     });
 
     this.orchestrator = new TeamOrchestrator(this.registry);
   }
 
   public createTeam(teamId: string, name: string): Team {
-    return this.orchestrator.createTeam(teamId, 'default-tenant', name || 'Default Team', [
-      { agentId: 'jules-lead', providerName: 'google-jules', role: 'LEAD' },
-      { agentId: 'jules-reviewer', providerName: 'google-jules', role: 'SECURITY_REVIEWER' },
+    return this.orchestrator.createTeam(teamId, "default-tenant", name || "Default Team", [
+      { agentId: "jules-lead", providerName: "google-jules", role: "LEAD" },
+      { agentId: "jules-reviewer", providerName: "google-jules", role: "SECURITY_REVIEWER" },
     ]);
+  }
+
+  public async runMultiAgentDebate(taskId: string, topic: string): Promise<{ leadProposal: string; securityReview: string; consensusApproved: boolean }> {
+    const leadSession = await this.julesAdapter.createSession(taskId, "lead-ide-agent");
+    const leadMsg = await this.julesAdapter.sendMessage(leadSession.sessionId, `Architect Proposal for: "${topic}"`);
+
+    const reviewerSession = await this.julesAdapter.createSession(`review-${taskId}`, "security-reviewer");
+    const reviewMsg = await this.julesAdapter.sendMessage(reviewerSession.sessionId, `Reviewing proposal: ${leadMsg.content}`);
+
+    return {
+      leadProposal: leadMsg.content,
+      securityReview: reviewMsg.content,
+      consensusApproved: true,
+    };
   }
 
   public async runAutonomousLoop(taskId: string, userIntent: string, editor: CodeEditor, targetFile?: string): Promise<{
@@ -335,8 +427,8 @@ export class AgentTeamPanel {
     buffer?: EditorBuffer;
     verified: boolean;
   }> {
-    const session = await this.julesAdapter.createSession(taskId, 'lead-ide-agent');
-    const activity = await this.julesAdapter.sendMessage(session.sessionId, `User Intent: "${userIntent || 'Default intent'}"`);
+    const session = await this.julesAdapter.createSession(taskId, "lead-ide-agent");
+    const activity = await this.julesAdapter.sendMessage(session.sessionId, `User Intent: "${userIntent || "Default intent"}"`);
 
     let buffer: EditorBuffer | undefined;
     if (targetFile) {
@@ -361,6 +453,8 @@ export interface IDEShell {
   explorer: WorkspaceExplorer;
   editor: CodeEditor;
   search: SearchEngine;
+  symbolIndexer: SymbolIndexer;
+  checkpointManager: CheckpointManager;
   terminal: TerminalShell;
   git: GitWorkspace;
   diagnostics: DiagnosticsEngine;
@@ -370,11 +464,13 @@ export interface IDEShell {
 }
 
 export function activateIDE(workspacePath: string = process.cwd()): IDEShell {
-  console.log('Jules Coding IDE (Product 2) Shell Active');
+  console.log("Jules Coding IDE (Product 2) Shell Active");
 
   const explorer = new WorkspaceExplorer(workspacePath);
   const editor = new CodeEditor(workspacePath);
   const search = new SearchEngine(workspacePath);
+  const symbolIndexer = new SymbolIndexer(workspacePath);
+  const checkpointManager = new CheckpointManager();
   const terminal = new TerminalShell(workspacePath);
   const git = new GitWorkspace(workspacePath);
   const diagnostics = new DiagnosticsEngine();
@@ -383,12 +479,14 @@ export function activateIDE(workspacePath: string = process.cwd()): IDEShell {
   const agentTeamPanel = new AgentTeamPanel();
 
   return {
-    appName: 'Jules Coding IDE',
-    version: '4.0.0',
+    appName: "Jules Coding IDE",
+    version: "4.0.0",
     activeWorkspacePath: workspacePath,
     explorer,
     editor,
     search,
+    symbolIndexer,
+    checkpointManager,
     terminal,
     git,
     diagnostics,

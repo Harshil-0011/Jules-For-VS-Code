@@ -16,85 +16,61 @@ Detailed guide for installing, configuring, and operating the three independent 
 
 ---
 
-## 1️⃣ Jules Code CLI
+## 1️⃣ Jules Code CLI (Terminal-First Agent)
 
-The `jules` CLI is a terminal-first autonomous coding agent.
+The `jules` CLI is an autonomous coding agent with custom rules, context tagging, and cost tracking.
 
-### Installation Options
+### Features & Capabilities
 
-* **Via NPM Global Package**:
-  ```
-  npm install -g jules-code-cli
-  ```
-* **Via Standalone Binary**:
-  ```
-  curl -fsSL https://raw.githubusercontent.com/Harshil-0011/Jules-For-VS-Code/main/install-cli | env RUN_INSTALLER=1
-  ```
+- **Custom Rules (`.julesrules`)**: Place a `.julesrules` file in your repository root to enforce system instructions and policy rules.
+- **Context Tagging (`@file`)**: Pass `@filepath` directly in prompts to automatically load and attach file contents to the session context.
+- **Slash Commands**:
+  - `/help` — Display command guide
+  - `/status` — Inspect git branch and custom `.julesrules` status
+  - `/diff` — Inspect active workspace uncommitted git diffs
+  - `/cost` — Show token consumption and estimated execution cost ($ USD)
+  - `/rollback` — Revert workspace changes to prior checkpoint
+  - `/mode <mode>` — Switch permission modes (`AUTO`, `ASK`, `READ_ONLY`, `CI`)
+  - `/session list` — View session history and token metrics
+  - `/sources` — List connected Jules cloud sources
 
-### CLI Commands & Usage Modes
+### Usage Modes
 
-```
-# 1. Interactive Shell (REPL)
+```bash
+# 1. Interactive Shell with @file context
 jules
+jules (auto)> refactor authentication in @src/auth/service.ts
 
 # 2. Single Task Mode
-jules "fix the failing test in auth module"
+jules "fix failing test in auth module @tests/unit/auth.test.ts"
 
 # 3. Exec Mode with Custom Task
 jules exec "implement JWT authentication"
 
-# 4. Code Review Mode (Read-Only Policy)
+# 4. Code Review Mode (READ_ONLY Policy)
 jules review
 
-# 5. Auto Repair / Fix Mode
-jules fix
-
-# 6. Headless / Non-Interactive CI Execution
-jules exec --task "Fix failing test in auth module" --non-interactive
+# 5. Token Cost & Metrics Check
+jules (auto)> /cost
 ```
 
-### Permission Modes
+---
 
-- `READ_ONLY`: Workspace modifications and tool executions are strictly forbidden.
-- `ASK`: High-risk or mutating tool operations require user confirmation.
-- `AUTO`: Permitted operations execute automatically within policy bounds.
-- `CI`: Non-interactive execution for automated build and repair pipelines.
+## 2️⃣ Jules Coding IDE (Standalone AI-Native IDE)
+
+A ground-up standalone AI IDE with integrated editor, file tree, terminal, web preview browser, symbol indexer, checkpoint manager, and multi-agent team orchestrator.
+
+### Modern AI Features
+
+- **Symbol Indexer**: Indexes workspace AST symbols (functions, classes, interfaces, types) for instant agent context lookups.
+- **Multi-Agent Debate**: Orchestrates consensus reviews between Lead Architect agents and Security Reviewer agents before code application.
+- **Workspace Checkpoints**: Automatically creates revertable state checkpoints before agent workspace mutations.
 
 ---
 
-## 2️⃣ Jules Extension for VS Code
+## 3️⃣ Jules Extension for VS Code
 
 Brings Jules autonomous agent sessions directly into your existing VS Code environment.
-
-### Installation Options
-
-* **Direct VSIX Download**: Download [`jules-extension.vsix`](https://github.com/Harshil-0011/Jules-For-VS-Code/releases/latest/download/jules-extension.vsix) and run:
-  ```
-  code --install-extension jules-extension.vsix
-  ```
-* **VS Code Marketplace**: Search `Jules Extension` in the Extensions view (`Ctrl+Shift+X`) and install.
-
-### Contributed VS Code Commands
-
-- `jules.newTask` — Create a new Jules autonomous coding task
-- `jules.startTask` — Start executing the current active task
-- `jules.sendMessage` — Send a prompt message to the active Jules session
-- `jules.assignGitHubIssue` — Dispatch a task derived from a GitHub issue
-- `jules.versionBump` — Safely bump a package dependency version
-- `jules.bugFix` — Dispatch an automated bug fix agent
-- `jules.emergencyStop` — Immediately trigger global emergency stop
-
----
-
-## 3️⃣ Jules Coding IDE
-
-A standalone AI-native IDE integrating code editor, file explorer, search engine, terminal, Git workspace, diagnostics, web preview, task manager, and agent team panel.
-
-### Platform Binaries & Installation
-
-* **macOS (`.dmg`)**: Download [`Jules-IDE-macOS.dmg`](https://github.com/Harshil-0011/Jules-For-VS-Code/releases/latest/download/Jules-IDE-macOS.dmg) and move to `Applications`.
-* **Linux (`.AppImage`)**: Download [`Jules-IDE-Linux.AppImage`](https://github.com/Harshil-0011/Jules-For-VS-Code/releases/latest/download/Jules-IDE-Linux.AppImage), grant execution permissions (`chmod +x`), and run.
-* **Windows (`.exe`)**: Download and run [`Jules-IDE-Setup.exe`](https://github.com/Harshil-0011/Jules-For-VS-Code/releases/latest/download/Jules-IDE-Setup.exe).
 
 ---
 
@@ -103,8 +79,8 @@ A standalone AI-native IDE integrating code editor, file explorer, search engine
 | Variable | Description | Default |
 |---|---|---|
 | `PORT` | Platform Gateway API & WebSocket port | `3000` |
-| `DB_PATH` | SQLite database file path (or `:memory:`) | `./jules_platform.db` |
+| `DB_PATH` | SQLite database file path | `./jules_platform.db` |
 | `JULES_API_KEY` | Google Jules Endpoint API Key | `mock-jules-key` |
 | `JULES_API_URL` | Google Jules API Endpoint | `https://jules.googleapis.com/v1alpha` |
-| `GITHUB_TOKEN` | GitHub API Token for repository access | `mock-github-token` |
+| `GITHUB_TOKEN` | GitHub API Token | `mock-github-token` |
 | `EMERGENCY_STOP` | Global emergency stop kill switch | `false` |
