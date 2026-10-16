@@ -24,25 +24,25 @@ The ecosystem offers **three independent products**. Select and download the pro
 
 ---
 
-## 📸 Application Screenshots & Interface Previews
+## 📸 Application Screenshots & UI Previews
 
 ### 1️⃣ Jules Extension for VS Code (Sidebar & Diff View)
 
 Integrates autonomous Jules agent panels directly into your existing VS Code workspace.
 
-![Jules Extension Interface](./assets/screenshots/jules-extension.svg)
+![Jules Extension Interface Screenshot](./assets/screenshots/jules-extension.png)
 
 ### 2️⃣ Jules Coding IDE (Standalone AI-Native Desktop App)
 
 A ground-up standalone AI IDE with integrated file tree, multi-buffer editor, terminal, git workspace, diagnostics, web preview browser, and multi-agent team orchestrator.
 
-![Jules Coding IDE Interface](./assets/screenshots/jules-ide.svg)
+![Jules Coding IDE Interface Screenshot](./assets/screenshots/jules-ide.png)
 
 ### 3️⃣ Jules Code CLI (Terminal-First Autonomous Shell)
 
 Terminal-first autonomous coding shell supporting slash commands, policy checks, interactive REPLs, and headless CI runs.
 
-![Jules Code CLI Interface](./assets/screenshots/jules-cli.svg)
+![Jules Code CLI Interface Screenshot](./assets/screenshots/jules-cli.png)
 
 ---
 
