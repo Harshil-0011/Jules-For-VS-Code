@@ -1,0 +1,99 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 675" width="100%" height="100%" font-family="-apple-system, BlinkMacSystemFont, SF Pro Display, Segoe UI, Roboto, Helvetica, Arial, sans-serif">
+  <defs>
+    <linearGradient id="ideBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1e1e2e"/>
+      <stop offset="100%" stop-color="#11111b"/>
+    </linearGradient>
+    <linearGradient id="accentGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#cba6f7"/>
+      <stop offset="100%" stop-color="#89b4fa"/>
+    </linearGradient>
+    <filter id="ideShadow" x="-5%" y="-5%" width="110%" height="110%">
+      <feDropShadow dx="0" dy="10" stdDeviation="15" flood-color="#000000" flood-opacity="0.6"/>
+    </filter>
+  </defs>
+
+  <rect width="1200" height="675" fill="url(#ideBg)"/>
+
+  <g filter="url(#ideShadow)">
+    <rect x="30" y="30" width="1140" height="615" rx="12" fill="#181825" stroke="#313244" stroke-width="1.5"/>
+
+    <!-- Title Bar -->
+    <rect x="30" y="30" width="1140" height="42" rx="12" fill="#11111b"/>
+    <circle cx="55" cy="51" r="6" fill="#ed8796"/>
+    <circle cx="75" cy="51" r="6" fill="#eed49f"/>
+    <circle cx="95" cy="51" r="6" fill="#a6da95"/>
+    <text x="600" y="56" fill="#cba6f7" font-weight="700" font-size="13" text-anchor="middle">JULES CODING IDE v4.0.0 — Autonomous Standalone IDE [Project: Jules-Ecosystem]</text>
+
+    <!-- File Explorer Sidebar -->
+    <rect x="30" y="72" width="220" height="573" fill="#181825"/>
+    <text x="45" y="98" fill="#a6adc8" font-weight="700" font-size="11">WORKSPACE EXPLORER</text>
+
+    <g transform="translate(45, 120)" font-family="monospace" font-size="12">
+      <text y="0" fill="#f5e0dc">📁 apps/</text>
+      <text y="22" fill="#a6adc8">  📁 jules-cli/</text>
+      <text y="44" fill="#a6adc8">  📁 jules-extension/</text>
+      <text y="66" fill="#89b4fa">  📁 jules-ide/</text>
+      <text y="88" fill="#a6da95">    📄 index.ts</text>
+      <text y="110" fill="#f5e0dc">📁 server/</text>
+      <text y="132" fill="#89b4fa">  📄 index.ts</text>
+      <text y="154" fill="#a6adc8">  📁 gateway/</text>
+      <text y="176" fill="#f5e0dc">📁 tests/</text>
+      <text y="198" fill="#a6da95">  📄 ide.test.ts</text>
+    </g>
+
+    <!-- Code Editor Area -->
+    <rect x="250" y="72" width="550" height="573" fill="#1e1e2e"/>
+    <rect x="250" y="72" width="550" height="36" fill="#181825"/>
+    <rect x="250" y="72" width="160" height="36" fill="#1e1e2e"/>
+    <rect x="250" y="72" width="160" height="2" fill="#cba6f7"/>
+    <text x="270" y="95" fill="#cdd6f4" font-family="monospace" font-size="12">apps/jules-ide/index.ts</text>
+
+    <g transform="translate(270, 130)" font-family="monospace" font-size="13">
+      <text y="0" fill="#cba6f7">import <tspan fill="#f5e0dc">{ activateIDE }</tspan> from <tspan fill="#a6e3a1">&quot;./ide_shell&quot;</tspan>;</text>
+      <text y="25" fill="#cba6f7">import <tspan fill="#f5e0dc">{ TeamOrchestrator }</tspan> from <tspan fill="#a6e3a1">&quot;../../server/teams&quot;</tspan>;</text>
+      <text y="60" fill="#6c7086">// Activate Standalone Autonomous AI IDE Shell</text>
+      <text y="85" fill="#cba6f7">export function <tspan fill="#89b4fa">bootstrapIDE</tspan>() {</text>
+      <text y="110" fill="#cba6f7">  const <tspan fill="#f5e0dc">ide</tspan> = <tspan fill="#89b4fa">activateIDE</tspan>(process.cwd());</text>
+      <text y="135" fill="#cba6f7">  console.<tspan fill="#89b4fa">log</tspan>(<tspan fill="#a6e3a1">&quot;Jules Coding IDE v4.0.0 Active&quot;</tspan>);</text>
+      <text y="160" fill="#cba6f7">  return <tspan fill="#f5e0dc">ide</tspan>;</text>
+      <text y="185" fill="#cdd6f4">}</text>
+    </g>
+
+    <!-- Terminal -->
+    <rect x="250" y="440" width="550" height="205" fill="#11111b"/>
+    <rect x="250" y="440" width="550" height="28" fill="#181825"/>
+    <text x="265" y="458" fill="#a6adc8" font-size="11" font-weight="700">INTEGRATED TERMINAL</text>
+    <g transform="translate(265, 485)" font-family="monospace" font-size="12">
+      <text y="0" fill="#a6da95">$ node -e &quot;const ide = require(&apos;./dist/apps/jules-ide/index.js&apos;); ide.activateIDE();&quot;</text>
+      <text y="22" fill="#89b4fa">Jules Coding IDE (Product 2) Shell Active</text>
+      <text y="44" fill="#a6e3a1">✓ Multi-Agent Team Panel Connected</text>
+      <text y="66" fill="#a6e3a1">✓ Workspace File Explorer &amp; Diagnostics Engine Ready</text>
+    </g>
+
+    <!-- Right Side: Diagnostics & Web Preview -->
+    <rect x="800" y="72" width="370" height="280" fill="#181825"/>
+    <rect x="800" y="72" width="370" height="36" fill="#11111b"/>
+    <text x="815" y="95" fill="#cdd6f4" font-weight="700" font-size="12">WEB PREVIEW &amp; DIAGNOSTICS</text>
+
+    <rect x="815" y="120" width="340" height="215" rx="8" fill="#1e1e2e" stroke="#313244"/>
+    <rect x="815" y="120" width="340" height="28" fill="#313244"/>
+    <text x="825" y="139" fill="#a6da95" font-family="monospace" font-size="11">http://localhost:3000/preview</text>
+    <text x="830" y="175" fill="#89b4fa" font-weight="700" font-size="14">Jules Coding IDE Live Preview</text>
+    <text x="830" y="200" fill="#a6da95" font-size="12">✓ 0 Errors | ✓ 0 Warnings</text>
+    <text x="830" y="225" fill="#a6adc8" font-size="12">Database: SQLite (:memory: active)</text>
+
+    <!-- Agent Team Orchestrator Panel -->
+    <rect x="800" y="352" width="370" height="293" fill="#11111b"/>
+    <rect x="800" y="352" width="370" height="36" fill="#181825"/>
+    <text x="815" y="375" fill="#cba6f7" font-weight="700" font-size="12">AGENT TEAM PANEL</text>
+
+    <rect x="815" y="400" width="340" height="55" rx="8" fill="#1e1e2e" stroke="#89b4fa" stroke-width="1"/>
+    <text x="830" y="422" fill="#89b4fa" font-weight="700" font-size="12">Agent: Jules Lead</text>
+    <text x="830" y="440" fill="#a6da95" font-family="monospace" font-size="11">Running Autonomous Bounded Loop</text>
+
+    <rect x="815" y="470" width="340" height="55" rx="8" fill="#1e1e2e" stroke="#cba6f7" stroke-width="1"/>
+    <text x="830" y="492" fill="#cba6f7" font-weight="700" font-size="12">Agent: Security Reviewer</text>
+    <text x="830" y="510" fill="#a6da95" font-family="monospace" font-size="11">Policy Audit: ZERO-TRUST DENY OK</text>
+  </g>
+</svg>

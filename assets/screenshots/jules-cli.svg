@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 675" width="100%" height="100%" font-family="-apple-system, BlinkMacSystemFont, SF Mono, Monaco, Consolas, Linux Libertine, monospace">
+  <defs>
+    <linearGradient id="cliBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0d1117"/>
+      <stop offset="100%" stop-color="#010409"/>
+    </linearGradient>
+    <filter id="cliShadow" x="-5%" y="-5%" width="110%" height="110%">
+      <feDropShadow dx="0" dy="12" stdDeviation="18" flood-color="#000000" flood-opacity="0.7"/>
+    </filter>
+  </defs>
+
+  <rect width="1200" height="675" fill="url(#cliBg)"/>
+
+  <g filter="url(#cliShadow)">
+    <rect x="40" y="40" width="1120" height="595" rx="12" fill="#0d1117" stroke="#30363d" stroke-width="1.5"/>
+
+    <!-- Terminal Header Bar -->
+    <rect x="40" y="40" width="1120" height="42" rx="12" fill="#161b22"/>
+    <circle cx="65" cy="61" r="6" fill="#f85149"/>
+    <circle cx="85" cy="61" r="6" fill="#d29922"/>
+    <circle cx="105" cy="61" r="6" fill="#3fb950"/>
+    <text x="600" y="66" fill="#8b949e" font-size="13" font-weight="600" text-anchor="middle">jules-cli — zsh — 120x35</text>
+
+    <!-- Banner -->
+    <g transform="translate(70, 110)">
+      <text y="0" fill="#3fb950" font-weight="bold" font-size="14">=====================================================</text>
+      <text y="24" fill="#3fb950" font-weight="bold" font-size="16">  JULES CODE CLI — Interactive Autonomous Shell</text>
+      <text y="46" fill="#3fb950" font-size="14">  Powered by Google Jules &amp; Gemini Pro</text>
+      <text y="68" fill="#3fb950" font-weight="bold" font-size="14">=====================================================</text>
+      <text y="95" fill="#d2a8ff" font-size="13">Workspace: /app | Branch: main | Mode: AUTO</text>
+
+      <!-- User Command -->
+      <text y="140" fill="#58a6ff" font-weight="bold" font-size="14">jules (auto)&gt; <tspan fill="#f0f6fc">fix failing test in auth module</tspan></text>
+
+      <!-- Agent Steps -->
+      <text y="175" fill="#79c0ff" font-size="13">[INTERPRET] Processing task: &quot;fix failing test in auth module&quot;</text>
+      <text y="200" fill="#79c0ff" font-size="13">[INSPECT] Repository: app | Branch: main | Package Manager: npm</text>
+      <text y="225" fill="#79c0ff" font-size="13">[PLAN] Jules Plan: 1. Connect source -&gt; 2. Generate changes -&gt; 3. Run verification</text>
+      <text y="250" fill="#79c0ff" font-size="13">[EXECUTE] Executing task via Jules Cloud VM Session (jules-session-88f2)</text>
+      <text y="275" fill="#79c0ff" font-size="13">[OBSERVE] Edits applied successfully to repository workspace</text>
+      <text y="300" fill="#79c0ff" font-size="13">[VERIFY] Executing build and test verification suite</text>
+      <text y="328" fill="#56d364" font-weight="bold" font-size="14">[COMPLETE] Task &quot;fix failing test in auth module&quot; finished with status PASSED</text>
+
+      <!-- Second Slash Command -->
+      <text y="375" fill="#58a6ff" font-weight="bold" font-size="14">jules (auto)&gt; <tspan fill="#f0f6fc">/status</tspan></text>
+      <text y="400" fill="#7ee787" font-size="13">Repository Status: Path /app | Project: app | Branch: main | PM: npm</text>
+
+      <!-- Active Prompt -->
+      <text y="445" fill="#58a6ff" font-weight="bold" font-size="14">jules (auto)&gt; <rect x="155" y="432" width="10" height="18" fill="#58a6ff"/></text>
+    </g>
+  </g>
+</svg>
